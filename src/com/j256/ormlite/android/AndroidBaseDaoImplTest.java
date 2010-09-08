@@ -71,7 +71,7 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 	protected void setUp() throws Exception {
 		super.setUp();
 		helper = new OrmDatabaseHelper(getContext());
-		connectionSource = helper.getOrmliteConnectionSource();
+		connectionSource = helper.getConnectionSource();
 		fooDao = createDao(Foo.class, true);
 	}
 
