@@ -23,7 +23,6 @@ import com.j256.ormlite.db.SqliteAndroidDatabaseType;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.DatabaseFieldConfig;
-import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import com.j256.ormlite.stmt.StatementBuilder;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.DatabaseTable;
@@ -78,7 +77,14 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 	@Override
 	protected void tearDown() throws Exception {
 		super.tearDown();
-		helper.close();
+		if (helper != null) {
+			helper.close();
+			helper = null;
+		}
+		if (connectionSource != null) {
+			connectionSource.close();
+			connectionSource = null;
+		}
 	}
 
 	public void testCreateDaoStatic() throws Exception {
@@ -1316,13 +1322,7 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 			for (DatabaseTableConfig<?> tableConfig : dropClassSet) {
 				dropTable(tableConfig, true);
 			}
-			try {
-				if (connectionSource instanceof JdbcConnectionSource) {
-					((JdbcConnectionSource) connectionSource).close();
-				}
-			} catch (Exception e) {
-				// oh well, we tried
-			}
+			connectionSource.close();
 			connectionSource = null;
 		}
 		databaseType = null;
