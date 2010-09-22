@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import android.database.sqlite.SQLiteException;
 import android.test.AndroidTestCase;
 
 import com.j256.ormlite.dao.BaseDaoImpl;
@@ -658,9 +659,9 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 	public void testFieldConfig() throws Exception {
 		List<DatabaseFieldConfig> fieldConfigs = new ArrayList<DatabaseFieldConfig>();
 		fieldConfigs.add(new DatabaseFieldConfig("id", "id2", DataType.UNKNOWN, null, 0, false, false, true, null,
-				false, null, false, null, false, null));
+				false, null, false, null, false, null, false));
 		fieldConfigs.add(new DatabaseFieldConfig("stuff", "stuffy", DataType.UNKNOWN, null, 0, false, false, false,
-				null, false, null, false, null, false, null));
+				null, false, null, false, null, false, null, false));
 		DatabaseTableConfig<NoAnno> tableConfig = new DatabaseTableConfig<NoAnno>(NoAnno.class, "noanno", fieldConfigs);
 		Dao<NoAnno, Integer> noAnnotaionDao = createDao(tableConfig, true);
 		NoAnno noa = new NoAnno();
@@ -675,9 +676,9 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 	public void testFieldConfigForeign() throws Exception {
 		List<DatabaseFieldConfig> noAnnotationsFieldConfigs = new ArrayList<DatabaseFieldConfig>();
 		noAnnotationsFieldConfigs.add(new DatabaseFieldConfig("id", "idthingie", DataType.UNKNOWN, null, 0, false,
-				false, true, null, false, null, false, null, false, null));
+				false, true, null, false, null, false, null, false, null, false));
 		noAnnotationsFieldConfigs.add(new DatabaseFieldConfig("stuff", "stuffy", DataType.UNKNOWN, null, 0, false,
-				false, false, null, false, null, false, null, false, null));
+				false, false, null, false, null, false, null, false, null, false));
 		DatabaseTableConfig<NoAnno> noAnnotationsTableConfig =
 				new DatabaseTableConfig<NoAnno>(NoAnno.class, noAnnotationsFieldConfigs);
 		Dao<NoAnno, Integer> noAnnotaionDao = createDao(noAnnotationsTableConfig, true);
@@ -689,9 +690,9 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 
 		List<DatabaseFieldConfig> noAnnotationsForiegnFieldConfigs = new ArrayList<DatabaseFieldConfig>();
 		noAnnotationsForiegnFieldConfigs.add(new DatabaseFieldConfig("id", "anotherid", DataType.UNKNOWN, null, 0,
-				false, false, true, null, false, null, false, null, false, null));
+				false, false, true, null, false, null, false, null, false, null, false));
 		noAnnotationsForiegnFieldConfigs.add(new DatabaseFieldConfig("foreign", "foreignThingie", DataType.UNKNOWN,
-				null, 0, false, false, false, null, true, noAnnotationsTableConfig, false, null, false, null));
+				null, 0, false, false, false, null, true, noAnnotationsTableConfig, false, null, false, null, false));
 		DatabaseTableConfig<NoAnnoFor> noAnnotationsForiegnTableConfig =
 				new DatabaseTableConfig<NoAnnoFor>(NoAnnoFor.class, noAnnotationsForiegnFieldConfigs);
 
@@ -1317,6 +1318,40 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		assertNull(allDates.get(0).date);
 	}
 
+	public void testSpringBadWiring() throws Exception {
+		BaseDaoImpl<String, String> daoSupport = new BaseDaoImpl<String, String>(String.class) {
+		};
+		try {
+			daoSupport.initialize();
+			fail("expected exception");
+		} catch (IllegalStateException e) {
+			// expected
+		}
+	}
+
+	public void testUnique() throws Exception {
+		Dao<Unique, Long> dao = createDao(Unique.class, true);
+		String stuff = "this doesn't need to be unique";
+		String uniqueStuff = "this needs to be unique";
+		Unique unique = new Unique();
+		unique.stuff = stuff;
+		unique.uniqueStuff = uniqueStuff;
+		assertEquals(1, dao.create(unique));
+		// can't create it twice with the same stuff which needs to be unique
+		unique = new Unique();
+		unique.stuff = stuff;
+		assertEquals(1, dao.create(unique));
+		unique = new Unique();
+		unique.uniqueStuff = uniqueStuff;
+		try {
+			dao.create(unique);
+			fail("Should have thrown");
+		} catch (SQLiteException e) {
+			// expected
+			return;
+		}
+	}
+
 	private void closeConnection() throws Exception {
 		if (connectionSource != null) {
 			for (DatabaseTableConfig<?> tableConfig : dropClassSet) {
@@ -1798,5 +1833,15 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		public int id;
 		@DatabaseField
 		Date date;
+	}
+
+	@DatabaseTable
+	protected static class Unique {
+		@DatabaseField(generatedId = true)
+		int id;
+		@DatabaseField
+		String stuff;
+		@DatabaseField(unique = true)
+		String uniqueStuff;
 	}
 }
