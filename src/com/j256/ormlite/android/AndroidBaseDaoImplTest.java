@@ -61,6 +61,12 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 	private final static String DEFAULT_ENUM_NUMBER_VALUE = "1";
 
 	private static Dao<Foo, Integer> fooDao;
+
+	/*
+	 * ==================================================================================================================
+	 * ==============
+	 */
+
 	private DatabaseType databaseType = new SqliteAndroidDatabaseType();
 	private ConnectionSource connectionSource;
 	private OrmDatabaseHelper helper;
@@ -87,6 +93,8 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 			connectionSource = null;
 		}
 	}
+
+	/* ========================================================================================================== */
 
 	public void testCreateDaoStatic() throws Exception {
 		Dao<Foo, Integer> fooDao = BaseDaoImpl.createDao(databaseType, connectionSource, Foo.class);
@@ -133,8 +141,7 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		assertNull(fooDao.queryForId(foo1.id));
 	}
 
-	// @ExpectedBehavior(expected = SQLException.class)
-	public void testDoubleCreate() throws Exception {
+	public void doubleCreate() throws Exception {
 		Dao<DoubleCreate, Object> doubleDao = createDao(DoubleCreate.class, true);
 		int id = 313413123;
 		DoubleCreate foo = new DoubleCreate();
@@ -142,13 +149,13 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(1, doubleDao.create(foo));
 		try {
 			doubleDao.create(foo);
-			fail("Expected exception");
-		} catch (Exception expected) {
+			fail("expected exception");
+		} catch (SQLException e) {
 			// expected
 		}
 	}
 
-	public void testIterateRemove() throws Exception {
+	public void iterateRemove() throws Exception {
 		List<Foo> acctList = fooDao.queryForAll();
 		int initialSize = acctList.size();
 
@@ -208,7 +215,7 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		assertTrue(foo1.id != 0);
 	}
 
-	public void testObjectToString() throws Exception {
+	public void objectToString() throws Exception {
 		String stuff = "foo123231";
 		Foo foo1 = new Foo();
 		foo1.stuff = stuff;
@@ -217,92 +224,94 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		assertTrue(objStr.contains(stuff));
 	}
 
-	public void testCreateNull() throws Exception {
+	public void createNull() throws Exception {
 		assertEquals(0, fooDao.create(null));
 	}
 
-	public void testUpdateNull() throws Exception {
+	public void updateNull() throws Exception {
 		assertEquals(0, fooDao.update(null));
 	}
 
-	public void testUpdateIdNull() throws Exception {
+	public void updateIdNull() throws Exception {
 		assertEquals(0, fooDao.updateId(null, null));
 	}
 
-	public void testDeleteNull() throws Exception {
+	public void deleteNull() throws Exception {
 		assertEquals(0, fooDao.delete((Foo) null));
 	}
 
-	// @Test(expected = IllegalStateException.class)
-	public void testCloseInIterator() throws Exception {
+	public void closeInIterator() throws Exception {
 		Foo foo1 = new Foo();
 		foo1.stuff = "s1";
 		fooDao.create(foo1);
 		Iterator<Foo> iterator = fooDao.iterator();
-		while (iterator.hasNext()) {
-			iterator.next();
-			closeConnection();
+		try {
+			while (iterator.hasNext()) {
+				iterator.next();
+				closeConnection();
+			}
+			fail("expected exception");
+		} catch (IllegalStateException e) {
+			// expected
 		}
 	}
 
-	// @Test(expected = IllegalStateException.class)
-	public void testCloseIteratorFirst() throws Exception {
+	public void closeIteratorFirst() throws Exception {
 		Foo foo1 = new Foo();
 		foo1.stuff = "s1";
 		fooDao.create(foo1);
 		closeConnection();
 		try {
 			fooDao.iterator();
-			fail("Expected exception");
-		} catch (IllegalStateException expected) {
+			fail("expected exception");
+		} catch (IllegalStateException e) {
 			// expected
-			return;
 		}
 	}
 
-	// @Test(expected = IllegalStateException.class)
-	public void testCloseIteratorBeforeNext() throws Exception {
+	public void closeIteratorBeforeNext() throws Exception {
 		Foo foo1 = new Foo();
 		foo1.stuff = "s1";
 		fooDao.create(foo1);
 		Iterator<Foo> iterator = fooDao.iterator();
-		while (iterator.hasNext()) {
-			closeConnection();
-			iterator.next();
-		}
-	}
-
-	// @Test(expected = IllegalStateException.class)
-	public void testCloseIteratorBeforeRemove() throws Exception {
-		Foo foo1 = new Foo();
-		foo1.stuff = "s1";
-		fooDao.create(foo1);
-		Iterator<Foo> iterator = fooDao.iterator();
-		while (iterator.hasNext()) {
-			iterator.next();
-			closeConnection();
-			try {
-				iterator.remove();
-				fail("Expected exception");
-			} catch (Exception expected) {
-				// expected
-				return;
+		try {
+			while (iterator.hasNext()) {
+				closeConnection();
+				iterator.next();
 			}
+			fail("expected exception");
+		} catch (IllegalStateException e) {
+			// expected
 		}
 	}
 
-	// @Test(expected = IllegalStateException.class)
-	public void testNoNextBeforeRemove() throws Exception {
+	public void closeIteratorBeforeRemove() throws Exception {
+		Foo foo1 = new Foo();
+		foo1.stuff = "s1";
+		fooDao.create(foo1);
+		Iterator<Foo> iterator = fooDao.iterator();
+		try {
+			while (iterator.hasNext()) {
+				iterator.next();
+				closeConnection();
+				iterator.remove();
+			}
+			fail("expected exception");
+		} catch (IllegalStateException e) {
+			// expected
+		}
+	}
+
+	public void noNextBeforeRemove() throws Exception {
 		Foo foo1 = new Foo();
 		foo1.stuff = "s1";
 		fooDao.create(foo1);
 		Iterator<Foo> iterator = fooDao.iterator();
 		try {
 			iterator.remove();
-			fail("Expected exception");
-		} catch (IllegalStateException expected) {
+			fail("expected exception");
+		} catch (IllegalStateException e) {
 			// expected
-			return;
 		}
 	}
 
@@ -356,39 +365,35 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(0, fooDao.queryForAll().size());
 	}
 
-	public void testHasNextAfterDone() throws Exception {
+	public void hasNextAfterDone() throws Exception {
 		Iterator<Foo> iterator = fooDao.iterator();
 		while (iterator.hasNext()) {
 		}
 		assertFalse(iterator.hasNext());
 	}
 
-	// @Test(expected = IllegalStateException.class)
-	public void testNextWithoutHasNext() throws Exception {
+	public void nextWithoutHasNext() throws Exception {
 		Iterator<Foo> iterator = fooDao.iterator();
 		try {
 			iterator.next();
-			fail("Expected exception");
-		} catch (Exception expected) {
+			fail("expected exception");
+		} catch (IllegalStateException e) {
 			// expected
-			return;
 		}
 	}
 
-	// @Test(expected = IllegalStateException.class)
-	public void testRemoveAfterDone() throws Exception {
+	public void removeAfterDone() throws Exception {
 		Iterator<Foo> iterator = fooDao.iterator();
 		assertFalse(iterator.hasNext());
 		try {
 			iterator.remove();
-			fail("Expected exception");
-		} catch (IllegalStateException expected) {
+			fail("expected exception");
+		} catch (IllegalStateException e) {
 			// expected
-			return;
 		}
 	}
 
-	public void testIteratorNoResults() throws Exception {
+	public void iteratorNoResults() throws Exception {
 		Iterator<Foo> iterator = fooDao.iterator();
 		assertFalse(iterator.hasNext());
 		assertNull(iterator.next());
@@ -468,8 +473,8 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		};
 		try {
 			fooDao.create(new Foo());
-			fail("Should have thrown a npe because of missing dataSource stuff");
-		} catch (NullPointerException e) {
+			fail("expected exception");
+		} catch (IllegalStateException e) {
 			// expected
 		}
 		fooDao.setConnectionSource(connectionSource);
@@ -749,7 +754,6 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(0, i);
 	}
 
-	// @ExpectedBehavior(expected = SQLException.class)
 	public void testMultiplePrimaryKey() throws Exception {
 		Dao<Basic, String> fooDao = createDao(Basic.class, true);
 		Basic foo1 = new Basic();
@@ -757,10 +761,9 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(1, fooDao.create(foo1));
 		try {
 			fooDao.create(foo1);
-			fail("Expected exception");
-		} catch (Exception expected) {
+			fail("expected exception");
+		} catch (SQLiteException e) {
 			// expected
-			return;
 		}
 	}
 
@@ -774,16 +777,14 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(DEFAULT_VALUE, (int) defVal2.intField);
 	}
 
-	// @ExpectedBehavior(expected = SQLException.class)
 	public void testNotNull() throws Exception {
 		Dao<NotNull, Object> defValDao = createDao(NotNull.class, true);
 		NotNull notNull = new NotNull();
 		try {
 			defValDao.create(notNull);
-			fail("Expected exception");
-		} catch (Exception expected) {
+			fail("expected exception");
+		} catch (SQLiteException e) {
 			// expected
-			return;
 		}
 	}
 
@@ -901,7 +902,6 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		assertTrue(numberDao.objectsEqual(numberMaxs, allTypesList.get(2)));
 	}
 
-	// @ExpectedBehavior(expected = SQLException.class)
 	public void testStringWidthTooLong() throws Exception {
 		if (!databaseType.isVarcharFieldWidthSupported()) {
 			return;
@@ -917,10 +917,9 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		stringWidth.stringField = string;
 		try {
 			stringWidthDao.create(stringWidth);
-			fail("Expected exception");
-		} catch (SQLException expected) {
+			fail("expected exception");
+		} catch (SQLException e) {
 			// expected
-			return;
 		}
 	}
 
@@ -1015,15 +1014,14 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		assertTrue(objDao.objectsEqual(foo1, foo2));
 	}
 
-	// @Test(expected = IllegalArgumentException.class)
 	public void testNotSerializable() throws Exception {
 		try {
 			createDao(NotSerializable.class, true);
-			fail("Expected exception");
-		} catch (IllegalArgumentException expected) {
+			fail("expected exception");
+		} catch (IllegalArgumentException e) {
 			// expected
-			return;
 		}
+
 	}
 
 	public void testStringEnum() throws Exception {
@@ -1038,7 +1036,6 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(ourEnum, fooList.get(0).ourEnum);
 	}
 
-	// @Test(expected = SQLException.class)
 	public void testUnknownStringEnum() throws Exception {
 		Dao<LocalEnumString, Object> fooDao = createDao(LocalEnumString.class, true);
 		OurEnum ourEnum = OurEnum.SECOND;
@@ -1049,10 +1046,9 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		Dao<LocalEnumString2, Object> foo2Dao = createDao(LocalEnumString2.class, false);
 		try {
 			foo2Dao.queryForAll();
-			fail("Expected exception");
-		} catch (SQLException expected) {
+			fail("expected exception");
+		} catch (SQLException e) {
 			// expected
-			return;
 		}
 	}
 
@@ -1068,7 +1064,6 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(ourEnum, fooList.get(0).ourEnum);
 	}
 
-	// @Test(expected = SQLException.class)
 	public void testUnknownIntEnum() throws Exception {
 		Dao<LocalEnumInt, Object> fooDao = createDao(LocalEnumInt.class, true);
 		OurEnum ourEnum = OurEnum.SECOND;
@@ -1079,10 +1074,9 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		Dao<LocalEnumInt2, Object> foo2Dao = createDao(LocalEnumInt2.class, false);
 		try {
 			foo2Dao.queryForAll();
-			fail("Expected exception");
-		} catch (SQLException expected) {
+			fail("expected exception");
+		} catch (SQLException e) {
 			// expected
-			return;
 		}
 	}
 
@@ -1168,7 +1162,6 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		assertFalse(allDao.objectsEqual(all, allList.get(0)));
 	}
 
-	// @Test(expected = SQLException.class)
 	public void testNullUnPersistToBooleanPrimitive() throws Exception {
 		Dao<NullBoolean1, Object> null1Dao = createDao(NullBoolean1.class, true);
 		NullBoolean1 nullThing = new NullBoolean1();
@@ -1176,14 +1169,13 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		Dao<NullBoolean2, Object> null2Dao = createDao(NullBoolean2.class, false);
 		try {
 			null2Dao.queryForAll();
-			fail("Expected exception");
-		} catch (SQLException expected) {
+			fail("expected exception");
+		} catch (SQLException e) {
 			// expected
-			return;
 		}
+
 	}
 
-	// @Test(expected = SQLException.class)
 	public void testNullUnPersistToIntPrimitive() throws Exception {
 		Dao<NullInt1, Object> null1Dao = createDao(NullInt1.class, true);
 		NullInt1 nullThing = new NullInt1();
@@ -1191,11 +1183,11 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		Dao<NullInt2, Object> null2Dao = createDao(NullInt2.class, false);
 		try {
 			null2Dao.queryForAll();
-			fail("Expected exception");
-		} catch (SQLException expected) {
+			fail("expected exception");
+		} catch (SQLException e) {
 			// expected
-			return;
 		}
+
 	}
 
 	public void testQueryRaw() throws Exception {
@@ -1212,16 +1204,6 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		int colN = results.getNumberColumns();
 		String[] colNames = results.getColumnNames();
 		Field[] fields = Foo.class.getDeclaredFields();
-		int idFieldIndex = -1;
-		int stuffFieldIndex = -1;
-		for (int colC = 0; colC < colNames.length; colC++) {
-			if (fields[colC].getName().equalsIgnoreCase("id")) {
-				idFieldIndex = colC;
-			}
-			if (fields[colC].getName().equalsIgnoreCase("stuff")) {
-				stuffFieldIndex = colC;
-			}
-		}
 		for (int colC = 0; colC < colNames.length; colC++) {
 			assertTrue(fields[colC].getName().equalsIgnoreCase(colNames[colC]));
 		}
@@ -1229,8 +1211,14 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		assertTrue(iterator.hasNext());
 		String[] result = iterator.next();
 		assertEquals(colN, result.length);
-		assertEquals(Integer.toString(foo.id), result[idFieldIndex]);
-		assertEquals(stuff, result[stuffFieldIndex]);
+		for (int colC = 0; colC < results.getNumberColumns(); colC++) {
+			if (results.getColumnNames()[colC] == "id") {
+				assertEquals(Integer.toString(foo.id), result[colC]);
+			}
+			if (results.getColumnNames()[colC] == "stuff") {
+				assertEquals(stuff, result[1]);
+			}
+		}
 		assertFalse(iterator.hasNext());
 	}
 
@@ -1253,16 +1241,6 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		int colN = results.getNumberColumns();
 		String[] colNames = results.getColumnNames();
 		Field[] fields = Foo.class.getDeclaredFields();
-		int idFieldIndex = -1;
-		int stuffFieldIndex = -1;
-		for (int colC = 0; colC < colNames.length; colC++) {
-			if (fields[colC].getName().equalsIgnoreCase("id")) {
-				idFieldIndex = colC;
-			}
-			if (fields[colC].getName().equalsIgnoreCase("stuff")) {
-				stuffFieldIndex = colC;
-			}
-		}
 		for (int colC = 0; colC < colNames.length; colC++) {
 			assertTrue(fields[colC].getName().equalsIgnoreCase(colNames[colC]));
 		}
@@ -1271,8 +1249,14 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 			assertTrue(iterator.hasNext());
 			String[] result = iterator.next();
 			assertEquals(colN, result.length);
-			assertEquals(Integer.toString(foo.id), result[idFieldIndex]);
-			assertEquals(stuff, result[stuffFieldIndex]);
+			for (int colC = 0; colC < results.getNumberColumns(); colC++) {
+				if (results.getColumnNames()[colC] == "id") {
+					assertEquals(Integer.toString(foo.id), result[colC]);
+				}
+				if (results.getColumnNames()[colC] == "stuff") {
+					assertEquals(stuff, result[1]);
+				}
+			}
 			assertFalse(iterator.hasNext());
 		} finally {
 			iterator.close();
@@ -1280,8 +1264,8 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testNotNullDefault() throws Exception {
-		Dao<NotNullDefalt, Object> dao = createDao(NotNullDefalt.class, true);
-		NotNullDefalt notNullDefault = new NotNullDefalt();
+		Dao<NotNullDefault, Object> dao = createDao(NotNullDefault.class, true);
+		NotNullDefault notNullDefault = new NotNullDefault();
 		assertEquals(1, dao.create(notNullDefault));
 	}
 
@@ -1350,58 +1334,6 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 			// expected
 			return;
 		}
-	}
-
-	private void closeConnection() throws Exception {
-		if (connectionSource != null) {
-			for (DatabaseTableConfig<?> tableConfig : dropClassSet) {
-				dropTable(tableConfig, true);
-			}
-			connectionSource.close();
-			connectionSource = null;
-		}
-		databaseType = null;
-	}
-
-	private <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
-		return createDao(DatabaseTableConfig.fromClass(databaseType, clazz), createTable);
-	}
-
-	private <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
-		BaseDaoImpl<T, ID> dao = new BaseDaoImpl<T, ID>(databaseType, tableConfig) {
-		};
-		return configDao(tableConfig, createTable, dao);
-	}
-
-	private <T> void createTable(DatabaseTableConfig<T> tableConfig, boolean dropAtEnd) throws Exception {
-		try {
-			// first we drop it in case it existed before
-			dropTable(tableConfig, true);
-		} catch (SQLException ignored) {
-			// ignore any errors about missing tables
-		}
-		TableUtils.createTable(databaseType, connectionSource, tableConfig);
-		if (dropAtEnd) {
-			dropClassSet.add(tableConfig);
-		}
-	}
-
-	private <T> void dropTable(DatabaseTableConfig<T> tableConfig, boolean ignoreErrors) throws Exception {
-		// drop the table and ignore any errors along the way
-		TableUtils.dropTable(databaseType, connectionSource, tableConfig, ignoreErrors);
-	}
-
-	private <T, ID> Dao<T, ID> configDao(DatabaseTableConfig<T> tableConfig, boolean createTable, BaseDaoImpl<T, ID> dao)
-			throws Exception {
-		if (connectionSource == null) {
-			throw new SQLException("no connection source configured");
-		}
-		dao.setConnectionSource(connectionSource);
-		if (createTable) {
-			createTable(tableConfig, true);
-		}
-		dao.initialize();
-		return dao;
 	}
 
 	/* ==================================================================================== */
@@ -1816,9 +1748,19 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	@DatabaseTable
-	protected static class NotNullDefalt {
+	protected static class NotNullDefault {
 		@DatabaseField(canBeNull = false, defaultValue = "3")
 		String stuff;
+	}
+
+	@DatabaseTable
+	protected static class Unique {
+		@DatabaseField(generatedId = true)
+		int id;
+		@DatabaseField
+		String stuff;
+		@DatabaseField(unique = true)
+		String uniqueStuff;
 	}
 
 	@DatabaseTable
@@ -1835,13 +1777,59 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		Date date;
 	}
 
-	@DatabaseTable
-	protected static class Unique {
-		@DatabaseField(generatedId = true)
-		int id;
-		@DatabaseField
-		String stuff;
-		@DatabaseField(unique = true)
-		String uniqueStuff;
+	/*
+	 * ==================================================================================================================
+	 */
+
+	protected void closeConnection() throws Exception {
+		if (connectionSource != null) {
+			for (DatabaseTableConfig<?> tableConfig : dropClassSet) {
+				dropTable(tableConfig, true);
+			}
+			connectionSource.close();
+			connectionSource = null;
+		}
+		databaseType = null;
+	}
+
+	private <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
+		return createDao(DatabaseTableConfig.fromClass(databaseType, clazz), createTable);
+	}
+
+	private <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
+		BaseDaoImpl<T, ID> dao = new BaseDaoImpl<T, ID>(databaseType, tableConfig) {
+		};
+		return configDao(tableConfig, createTable, dao);
+	}
+
+	private <T> void createTable(DatabaseTableConfig<T> tableConfig, boolean dropAtEnd) throws Exception {
+		try {
+			// first we drop it in case it existed before
+			dropTable(tableConfig, true);
+		} catch (SQLException ignored) {
+			// ignore any errors about missing tables
+		}
+		TableUtils.createTable(databaseType, connectionSource, tableConfig);
+		if (dropAtEnd) {
+			dropClassSet.add(tableConfig);
+		}
+	}
+
+	private <T> void dropTable(DatabaseTableConfig<T> tableConfig, boolean ignoreErrors) throws Exception {
+		// drop the table and ignore any errors along the way
+		TableUtils.dropTable(databaseType, connectionSource, tableConfig, ignoreErrors);
+	}
+
+	private <T, ID> Dao<T, ID> configDao(DatabaseTableConfig<T> tableConfig, boolean createTable, BaseDaoImpl<T, ID> dao)
+			throws Exception {
+		if (connectionSource == null) {
+			throw new SQLException("no connection source configured");
+		}
+		dao.setConnectionSource(connectionSource);
+		if (createTable) {
+			createTable(tableConfig, true);
+		}
+		dao.initialize();
+		return dao;
 	}
 }
