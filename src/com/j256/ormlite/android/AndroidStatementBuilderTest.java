@@ -32,10 +32,7 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 	private Foo foo1;
 	private Foo foo2;
 
-	/*
-	 * ==================================================================================================================
-	 * ==============
-	 */
+	/* ============================================================================================================== */
 
 	private DatabaseType databaseType = new SqliteAndroidDatabaseType();
 	private ConnectionSource connectionSource;
@@ -63,7 +60,7 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 		}
 	}
 
-	/* ================================================================================================================ */
+	/* ============================================================================================================== */
 
 	public void testAnd() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
@@ -819,7 +816,7 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 		public String last;
 	}
 
-	/* ================================================================================================================ */
+	/* ============================================================================================================== */
 
 	private <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
 		return createDao(DatabaseTableConfig.fromClass(databaseType, clazz), createTable);

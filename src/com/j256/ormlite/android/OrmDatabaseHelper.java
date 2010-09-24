@@ -36,26 +36,11 @@ public class OrmDatabaseHelper extends OrmLiteSqliteOpenHelper {
 	@Override
 	public void onCreate(SQLiteDatabase database, ConnectionSource cs) {
 		Log.i(OrmDatabaseHelper.class.getName(), "onCreate");
-
-		// try {
-		// TableUtils.createTable(databaseType, cs, Foo.class);
-		// } catch (SQLException e) {
-		// Log.e(OrmDatabaseHelper.class.getName(), "Can't create database", e);
-		// throw new RuntimeException(e);
-		// }
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase database, ConnectionSource cs, int oldVersion, int newVersion) {
 		Log.i(OrmDatabaseHelper.class.getName(), "onUpgrade from version " + oldVersion + " to version " + newVersion);
-
-		// try {
-		// TableUtils.dropTable(databaseType, cs, Foo.class, true);
-		// } catch (SQLException e) {
-		// Log.e(OrmDatabaseHelper.class.getName(), "Can't drop databases", e);
-		// throw new RuntimeException(e);
-		// }
-
 		onCreate(database);
 	}
 
