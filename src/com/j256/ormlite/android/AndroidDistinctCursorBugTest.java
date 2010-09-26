@@ -9,6 +9,13 @@ import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.test.AndroidTestCase;
 import android.util.Log;
 
+/**
+ * Unit tests which demonstrates the problems with the Android SQLiteCursor when dealing with escaped field-names with
+ * DISTINCT queries (select DISTINCT `stuff` from footable). For some reason, this combination results in the
+ * cursor.getColumnName(#) call returning the field name `stuff` which _includes_ the escape characters.
+ * 
+ * @author graywatson
+ */
 public class AndroidDistinctCursorBugTest extends AndroidTestCase {
 
 	private final static String TABLE_NAME = "footable";
@@ -18,19 +25,50 @@ public class AndroidDistinctCursorBugTest extends AndroidTestCase {
 		SQLiteDatabase db = new Helper(getContext(), "test.db", null, 1).getWritableDatabase();
 		dropTable(db);
 		try {
-			db.execSQL("CREATE TABLE " + TABLE_NAME + " (`" + FIELD_NAME + "` VARCHAR )");
-			SQLiteStatement stmt =
-					db.compileStatement("INSERT INTO " + TABLE_NAME + " (" + FIELD_NAME + ") VALUES ('value')");
-			Log.i("TEST", "Insert line == " + stmt.executeInsert());
-			Log.i("TEST", "Insert line == " + stmt.executeInsert());
-			dumpQuery(db, "SELECT * FROM " + TABLE_NAME, 2);
-			dumpQuery(db, "SELECT " + FIELD_NAME + " FROM " + TABLE_NAME, 2);
-			dumpQuery(db, "SELECT `" + FIELD_NAME + "` FROM " + TABLE_NAME, 2);
-			dumpQuery(db, "SELECT DISTINCT * FROM " + TABLE_NAME, 1);
-			dumpQuery(db, "SELECT DISTINCT " + FIELD_NAME + " FROM " + TABLE_NAME, 1);
-			dumpQuery(db, "SELECT DISTINCT `" + FIELD_NAME + "` FROM " + TABLE_NAME, 1);
+			// create our table and insert 2 rows
+			createTableWithData(db, 2);
+
+			// this works fine
+			checkQuery(db, 2, "SELECT * FROM " + TABLE_NAME);
+			// fine, without escape characters
+			checkQuery(db, 2, "SELECT " + FIELD_NAME + " FROM " + TABLE_NAME);
+			// find, with escape characters but without DISTINCT
+			checkQuery(db, 2, "SELECT `" + FIELD_NAME + "` FROM " + TABLE_NAME);
+			// fine, *
+			checkQuery(db, 1, "SELECT DISTINCT * FROM " + TABLE_NAME);
+			// fine, without escape characters
+			checkQuery(db, 1, "SELECT DISTINCT " + FIELD_NAME + " FROM " + TABLE_NAME);
+
+			// this fails, returning the field name as `stuff` _with_ the escape characters
+			checkQuery(db, 1, "SELECT DISTINCT `" + FIELD_NAME + "` FROM " + TABLE_NAME);
 		} finally {
 			dropTable(db);
+		}
+	}
+
+	private void checkQuery(SQLiteDatabase db, int expectedResultN, String query) {
+		Log.i("TEST", "Query: " + query);
+		Cursor cursor = db.rawQuery(query, new String[0]);
+		int resultC = 0;
+		for (boolean gotRow = cursor.moveToFirst(); gotRow; gotRow = cursor.moveToNext()) {
+			String fieldName = cursor.getColumnName(0);
+			Log.i("TEST", "  field '" + fieldName + "' = '" + cursor.getString(0) + "'");
+			/*
+			 * make sure the field name matches the same one used in CREATE TABLE
+			 */
+			assertEquals(FIELD_NAME, fieldName);
+			resultC++;
+		}
+		// make sure we got the expected number of results
+		assertEquals(expectedResultN, resultC);
+	}
+
+	private void createTableWithData(SQLiteDatabase db, int insertN) {
+		db.execSQL("CREATE TABLE " + TABLE_NAME + " (`" + FIELD_NAME + "` VARCHAR )");
+		SQLiteStatement stmt =
+				db.compileStatement("INSERT INTO " + TABLE_NAME + " (`" + FIELD_NAME + "`) VALUES ('value')");
+		for (int insertC = 0; insertC < insertN; insertC++) {
+			Log.i("TEST", "Insert #" + insertC + " row-id == " + stmt.executeInsert());
 		}
 	}
 
@@ -38,21 +76,8 @@ public class AndroidDistinctCursorBugTest extends AndroidTestCase {
 		try {
 			db.execSQL("DROP TABLE " + TABLE_NAME);
 		} catch (Exception e) {
-			// ignore it
+			// ignore any exception
 		}
-	}
-
-	private void dumpQuery(SQLiteDatabase db, String query, int expectedResultN) {
-		Log.i("TEST", "Query " + query);
-		Cursor cursor = db.rawQuery(query, new String[0]);
-		int resultC = 0;
-		for (boolean gotStuff = cursor.moveToFirst(); gotStuff; gotStuff = cursor.moveToNext()) {
-			String fieldName = cursor.getColumnName(0);
-			Log.i("TEST", "  field '" + fieldName + "' = '" + cursor.getString(0) + "'");
-			assertEquals(FIELD_NAME, fieldName);
-			resultC++;
-		}
-		assertEquals(expectedResultN, resultC);
 	}
 
 	private class Helper extends SQLiteOpenHelper {
