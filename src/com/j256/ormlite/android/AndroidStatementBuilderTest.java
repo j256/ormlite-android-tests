@@ -15,22 +15,15 @@ import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.db.DatabaseType;
 import com.j256.ormlite.db.SqliteAndroidDatabaseType;
 import com.j256.ormlite.field.DatabaseField;
-import com.j256.ormlite.stmt.PreparedStmt;
+import com.j256.ormlite.stmt.PreparedQuery;
+import com.j256.ormlite.stmt.QueryBuilder;
 import com.j256.ormlite.stmt.SelectArg;
-import com.j256.ormlite.stmt.StatementBuilder;
 import com.j256.ormlite.stmt.Where;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.DatabaseTableConfig;
 import com.j256.ormlite.table.TableUtils;
 
 public class AndroidStatementBuilderTest extends AndroidTestCase {
-
-	private final static String ID_PREFIX = "id";
-	private final static int LOW_VAL = 21114;
-	private final static int HIGH_VAL = LOW_VAL + 499494;
-	private final static int EQUAL_VAL = 21312312;
-	private Foo foo1;
-	private Foo foo2;
 
 	/* ============================================================================================================== */
 
@@ -62,13 +55,20 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	/* ============================================================================================================== */
 
+	private final static String ID_PREFIX = "id";
+	private final static int LOW_VAL = 21114;
+	private final static int HIGH_VAL = LOW_VAL + 499494;
+	private final static int EQUAL_VAL = 21312312;
+	private Foo foo1;
+	private Foo foo2;
+
 	public void testAnd() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 
 		// test And + Eq
 		qb.where().eq(Foo.ID_COLUMN_NAME, foo1.id).and().eq(Foo.VAL_COLUMN_NAME, foo1.val);
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo1, results.get(0));
 
@@ -77,25 +77,25 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 		where.eq(Foo.ID_COLUMN_NAME, foo2.id);
 		where.and();
 		where.eq(Foo.VAL_COLUMN_NAME, foo2.val);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo2, results.get(0));
 
 		// test And double args
 		where = qb.where();
 		where.and(where.eq(Foo.ID_COLUMN_NAME, foo1.id), where.eq(Foo.VAL_COLUMN_NAME, foo1.val));
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo1, results.get(0));
 	}
 
 	public void testOr() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 
 		// test Or + Eq
 		qb.where().eq(Foo.ID_COLUMN_NAME, foo1.id).or().eq(Foo.VAL_COLUMN_NAME, foo1.val);
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo1, results.get(0));
 
@@ -104,7 +104,7 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 		where.eq(Foo.ID_COLUMN_NAME, foo2.id);
 		where.or();
 		where.eq(Foo.VAL_COLUMN_NAME, foo2.val);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo2, results.get(0));
 
@@ -112,7 +112,7 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 		where = qb.where();
 		where.or(where.and(where.eq(Foo.ID_COLUMN_NAME, foo1.id), where.eq(Foo.VAL_COLUMN_NAME, foo1.val)), where.eq(
 				Foo.ID_COLUMN_NAME, foo2.id).and().eq(Foo.VAL_COLUMN_NAME, foo2.val));
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
@@ -120,11 +120,11 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testSelectArgs() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 
 		SelectArg idSelectArg = new SelectArg();
 		qb.where().eq(Foo.ID_COLUMN_NAME, idSelectArg);
-		PreparedStmt<Foo> preparedQuery = qb.prepareStatement();
+		PreparedQuery<Foo> preparedQuery = qb.prepare();
 
 		idSelectArg.setValue(foo1.id);
 		List<Foo> results = fooDao.query(preparedQuery);
@@ -132,17 +132,17 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 		assertEquals(foo1, results.get(0));
 
 		idSelectArg.setValue(foo2.id);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo2, results.get(0));
 	}
 
 	public void testLike() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 
 		qb.where().like(Foo.ID_COLUMN_NAME, ID_PREFIX + "%");
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
@@ -151,12 +151,12 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 	public void testSelectArgsNotSet() throws Exception {
 
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 
 		SelectArg idSelectArg = new SelectArg();
 		qb.where().eq(Foo.ID_COLUMN_NAME, idSelectArg);
 		try {
-			fooDao.query(qb.prepareStatement());
+			fooDao.query(qb.prepare());
 			fail("expected exception");
 		} catch (SQLException e) {
 			// expected
@@ -165,20 +165,20 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testSelectNot() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 
 		qb.where().not().eq(Foo.ID_COLUMN_NAME, foo1.id);
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo2, results.get(0));
 	}
 
 	public void testIn() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 
 		qb.where().in(Foo.ID_COLUMN_NAME, foo1.id, foo2.id);
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
@@ -186,10 +186,10 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testInIterable() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 
 		qb.where().in(Foo.ID_COLUMN_NAME, Arrays.asList(foo1.id, foo2.id));
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
@@ -197,20 +197,20 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testNotIn() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 
 		qb.where().not().in(Foo.ID_COLUMN_NAME, foo1.id);
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo2, results.get(0));
 	}
 
 	public void testNotBad() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 		qb.where().not();
 		try {
-			fooDao.query(qb.prepareStatement());
+			fooDao.query(qb.prepare());
 			fail("expected exception");
 		} catch (IllegalStateException e) {
 			// expected
@@ -219,7 +219,7 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testNotNotComparison() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 		Where where = qb.where();
 		try {
 			where.not(where.and(where.eq(Foo.ID_COLUMN_NAME, foo1.id), where.eq(Foo.ID_COLUMN_NAME, foo1.id)));
@@ -231,20 +231,20 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testNotArg() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 		Where where = qb.where();
 		where.not(where.eq(Foo.ID_COLUMN_NAME, foo1.id));
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo2, results.get(0));
 	}
 
 	public void testNoWhereOperations() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 		qb.where();
 		try {
-			fooDao.query(qb.prepareStatement());
+			fooDao.query(qb.prepare());
 			fail("expected exception");
 		} catch (IllegalStateException e) {
 			// expected
@@ -253,10 +253,10 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testMissingAnd() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 		qb.where().eq(Foo.ID_COLUMN_NAME, foo1.id).eq(Foo.ID_COLUMN_NAME, foo1.id);
 		try {
-			fooDao.query(qb.prepareStatement());
+			fooDao.query(qb.prepare());
 			fail("expected exception");
 		} catch (IllegalStateException e) {
 			// expected
@@ -265,7 +265,7 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testMissingAndArg() throws Exception {
 		Dao<Foo, String> fooDao = createDao(Foo.class, false);
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 		try {
 			qb.where().and();
 			fail("expected exception");
@@ -276,37 +276,37 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testBetween() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 
 		qb.where().between(Foo.VAL_COLUMN_NAME, LOW_VAL, HIGH_VAL);
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
 
 		qb.where().between(Foo.VAL_COLUMN_NAME, LOW_VAL + 1, HIGH_VAL);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo2, results.get(0));
 
 		qb.where().between(Foo.VAL_COLUMN_NAME, LOW_VAL, HIGH_VAL - 1);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo1, results.get(0));
 
 		qb.where().between(Foo.VAL_COLUMN_NAME, LOW_VAL + 1, HIGH_VAL - 1);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(0, results.size());
 	}
 
 	public void testBetweenSelectArg() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 
 		SelectArg lowSelectArg = new SelectArg();
 		qb.where().between(Foo.VAL_COLUMN_NAME, lowSelectArg, HIGH_VAL);
 		lowSelectArg.setValue(LOW_VAL);
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
@@ -315,19 +315,19 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 		lowSelectArg.setValue(LOW_VAL + 1);
 		highSelectArg.setValue(HIGH_VAL);
 		qb.where().between(Foo.VAL_COLUMN_NAME, lowSelectArg, highSelectArg);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo2, results.get(0));
 	}
 
 	public void testBetweenStrings() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 
 		String low = ID_PREFIX;
 		String high = ID_PREFIX + "99999";
 		qb.where().between(Foo.ID_COLUMN_NAME, low, high);
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
@@ -335,70 +335,70 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testLtGtEtc() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 
 		qb.where().eq(Foo.VAL_COLUMN_NAME, foo1.val);
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo1, results.get(0));
 
 		qb.where().ge(Foo.VAL_COLUMN_NAME, foo1.val);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
 
 		qb.where().ge(Foo.VAL_COLUMN_NAME, foo1.val - 1);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
 
 		qb.where().ge(Foo.VAL_COLUMN_NAME, foo2.val);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo2, results.get(0));
 
 		qb.where().gt(Foo.VAL_COLUMN_NAME, foo1.val);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo2, results.get(0));
 
 		qb.where().gt(Foo.VAL_COLUMN_NAME, foo1.val - 1);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
 
 		qb.where().gt(Foo.VAL_COLUMN_NAME, foo2.val);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(0, results.size());
 
 		qb.where().le(Foo.VAL_COLUMN_NAME, foo1.val);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo1, results.get(0));
 
 		qb.where().le(Foo.VAL_COLUMN_NAME, foo1.val - 1);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(0, results.size());
 
 		qb.where().lt(Foo.VAL_COLUMN_NAME, foo1.val);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(0, results.size());
 
 		qb.where().lt(Foo.VAL_COLUMN_NAME, foo1.val + 1);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo1, results.get(0));
 
 		qb.where().ne(Foo.VAL_COLUMN_NAME, foo1.val);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo2, results.get(0));
 
 		qb.where().ne(Foo.VAL_COLUMN_NAME, foo1.val).and().ne(Foo.VAL_COLUMN_NAME, foo2.val);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(0, results.size());
 	}
 
@@ -414,21 +414,21 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 		checkPartialList(partialDao.queryForAll(), ids, firsts, lasts, false, false);
 
 		Set<String> columnNames = new HashSet<String>();
-		StatementBuilder<PartialData, Integer> qb = partialDao.statementBuilder();
-		qb.columns(columnNames);
-		List<PartialData> partialList = partialDao.query(qb.prepareStatement());
+		QueryBuilder<PartialData, Integer> qb = partialDao.queryBuilder();
+		qb.selectColumns(columnNames);
+		List<PartialData> partialList = partialDao.query(qb.prepare());
 		checkPartialList(partialList, ids, firsts, lasts, true, true);
 
 		columnNames = new HashSet<String>();
 		columnNames.add(PartialData.FIRST_FIELD_NAME);
-		qb.columns(columnNames);
-		partialList = partialDao.query(qb.prepareStatement());
+		qb.selectColumns(columnNames);
+		partialList = partialDao.query(qb.prepare());
 		checkPartialList(partialList, ids, firsts, lasts, false, true);
 
 		columnNames = new HashSet<String>();
 		columnNames.add(PartialData.LAST_FIELD_NAME);
-		qb.columns(columnNames);
-		partialList = partialDao.query(qb.prepareStatement());
+		qb.selectColumns(columnNames);
+		partialList = partialDao.query(qb.prepare());
 		checkPartialList(partialList, ids, firsts, lasts, false, false);
 
 		for (PartialData partialData : partialDao) {
@@ -450,21 +450,21 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 		checkPartialIterator(partialDao.iterator(), ids, firsts, lasts, false, false);
 
 		Set<String> columnNames = new HashSet<String>();
-		StatementBuilder<PartialData, Integer> qb = partialDao.statementBuilder();
-		qb.columns(columnNames);
-		Iterator<PartialData> iterator = partialDao.iterator(qb.prepareStatement());
+		QueryBuilder<PartialData, Integer> qb = partialDao.queryBuilder();
+		qb.selectColumns(columnNames);
+		Iterator<PartialData> iterator = partialDao.iterator(qb.prepare());
 		checkPartialIterator(iterator, ids, firsts, lasts, true, true);
 
 		columnNames = new HashSet<String>();
 		columnNames.add(PartialData.FIRST_FIELD_NAME);
-		qb.columns(columnNames);
-		iterator = partialDao.iterator(qb.prepareStatement());
+		qb.selectColumns(columnNames);
+		iterator = partialDao.iterator(qb.prepare());
 		checkPartialIterator(iterator, ids, firsts, lasts, false, true);
 
 		columnNames = new HashSet<String>();
 		columnNames.add(PartialData.LAST_FIELD_NAME);
-		qb.columns(columnNames);
-		iterator = partialDao.iterator(qb.prepareStatement());
+		qb.selectColumns(columnNames);
+		iterator = partialDao.iterator(qb.prepare());
 		checkPartialIterator(iterator, ids, firsts, lasts, false, false);
 
 		for (PartialData partialData : partialDao) {
@@ -486,9 +486,9 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 		checkPartialList(partialDao.queryForAll(), ids, firsts, lasts, false, false);
 		checkPartialIterator(partialDao.iterator(), ids, firsts, lasts, false, false);
 
-		StatementBuilder<PartialData, Integer> qb = partialDao.statementBuilder();
+		QueryBuilder<PartialData, Integer> qb = partialDao.queryBuilder();
 		qb.where().eq(PartialData.FIRST_FIELD_NAME, firstFirst);
-		Iterator<PartialData> iterator = partialDao.iterator(qb.prepareStatement());
+		Iterator<PartialData> iterator = partialDao.iterator(qb.prepare());
 		assertTrue(iterator.hasNext());
 		assertEquals(firstFirst, iterator.next().first);
 		assertFalse(iterator.hasNext());
@@ -496,7 +496,7 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 		SelectArg firstArg = new SelectArg();
 		qb.where().eq(PartialData.FIRST_FIELD_NAME, firstArg);
 		firstArg.setValue(firstFirst);
-		iterator = partialDao.iterator(qb.prepareStatement());
+		iterator = partialDao.iterator(qb.prepare());
 		assertTrue(iterator.hasNext());
 		assertEquals(firstFirst, iterator.next().first);
 		assertFalse(iterator.hasNext());
@@ -504,9 +504,9 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testUnknownColumn() throws Exception {
 		Dao<Foo, String> fooDao = createDao(Foo.class, false);
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 		try {
-			qb.columns("unknown column");
+			qb.selectColumns("unknown column");
 			fail("expected exception");
 		} catch (IllegalArgumentException e) {
 			// expected
@@ -515,25 +515,25 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testOrderBy() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 		qb.orderBy(Foo.VAL_COLUMN_NAME, true);
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
 
-		qb = fooDao.statementBuilder();;
+		qb = fooDao.queryBuilder();;
 		qb.orderBy(Foo.VAL_COLUMN_NAME, false);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo2, results.get(0));
 		assertEquals(foo1, results.get(1));
 
 		// should be the same order
-		qb = fooDao.statementBuilder();;
+		qb = fooDao.queryBuilder();;
 		qb.orderBy(Foo.EQUAL_COLUMN_NAME, false);
 		qb.orderBy(Foo.VAL_COLUMN_NAME, false);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo2, results.get(0));
 		assertEquals(foo1, results.get(1));
@@ -541,10 +541,10 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testGroupBy() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
-		qb.columns(Foo.EQUAL_COLUMN_NAME);
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
+		qb.selectColumns(Foo.EQUAL_COLUMN_NAME);
 		qb.groupBy(Foo.EQUAL_COLUMN_NAME);
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(EQUAL_VAL, results.get(0).equal);
 		assertNull(results.get(0).id);
@@ -552,13 +552,13 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testGroupAndOrderBy() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
-		qb.columns(Foo.EQUAL_COLUMN_NAME, Foo.ID_COLUMN_NAME);
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
+		qb.selectColumns(Foo.EQUAL_COLUMN_NAME, Foo.ID_COLUMN_NAME);
 		qb.groupBy(Foo.EQUAL_COLUMN_NAME);
 		qb.groupBy(Foo.ID_COLUMN_NAME);
 		// get strange order otherwise
 		qb.orderBy(Foo.ID_COLUMN_NAME, true);
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
@@ -566,19 +566,19 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testLimit() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 		// no limit the default
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
 		qb.limit(1);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo1, results.get(0));
 		// set back to no-limit
 		qb.limit(null);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
@@ -586,36 +586,36 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testLimitDoublePrepare() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 		// no limit the default
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
 		qb.limit(1);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo1, results.get(0));
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo1, results.get(0));
 	}
 
 	public void testLimitAfterSelect() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 		// no limit the default
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
 		qb.limit(1);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo1, results.get(0));
 		// set back to no-limit
 		qb.limit(null);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
@@ -623,9 +623,9 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testReturnId() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
-		qb.columns(Foo.ID_COLUMN_NAME);
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
+		qb.selectColumns(Foo.ID_COLUMN_NAME);
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1.id, results.get(0).id);
 		assertEquals(0, results.get(0).val);
@@ -635,9 +635,9 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testDistinct() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
-		qb.distinct().columns(Foo.EQUAL_COLUMN_NAME);
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
+		qb.distinct().selectColumns(Foo.EQUAL_COLUMN_NAME);
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(EQUAL_VAL, results.get(0).equal);
 		assertNull(results.get(0).id);
@@ -645,16 +645,16 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testIsNull() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 
 		// null fields start off as null so 0 are not-null
 		qb.where().isNotNull(Foo.NULL_COLUMN_NAME);
-		List<Foo> results = fooDao.query(qb.prepareStatement());
+		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(0, results.size());
 
 		// all are null
 		qb.where().isNull(Foo.NULL_COLUMN_NAME);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
@@ -667,12 +667,12 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 		// no null results should be found
 		qb.where().isNull(Foo.NULL_COLUMN_NAME);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(0, results.size());
 
 		// all are not-null
 		qb.where().isNotNull(Foo.NULL_COLUMN_NAME);
-		results = fooDao.query(qb.prepareStatement());
+		results = fooDao.query(qb.prepare());
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
@@ -680,27 +680,27 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	public void testSetWhere() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 		Where where = qb.where();
 		where.eq(Foo.ID_COLUMN_NAME, foo1.id);
-		List<Foo> list = fooDao.query(qb.prepareStatement());
+		List<Foo> list = fooDao.query(qb.prepare());
 		assertEquals(1, list.size());
 		assertEquals(foo1, list.get(0));
 
-		qb = fooDao.statementBuilder();
+		qb = fooDao.queryBuilder();
 		qb.setWhere(where);
-		list = fooDao.query(qb.prepareStatement());
+		list = fooDao.query(qb.prepare());
 		assertEquals(1, list.size());
 		assertEquals(foo1, list.get(0));
 	}
 
 	public void testQueryForStringInt() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
-		StatementBuilder<Foo, String> qb = fooDao.statementBuilder();
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
 		Where where = qb.where();
 		// testing the val column with a integer as a string
 		where.eq(Foo.VAL_COLUMN_NAME, Integer.toString(foo1.val));
-		List<Foo> list = fooDao.query(qb.prepareStatement());
+		List<Foo> list = fooDao.query(qb.prepare());
 		assertEquals(1, list.size());
 		assertEquals(foo1, list.get(0));
 	}
