@@ -823,7 +823,7 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 	}
 
 	private <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
-		BaseDaoImpl<T, ID> dao = new BaseDaoImpl<T, ID>(databaseType, tableConfig) {
+		BaseDaoImpl<T, ID> dao = new BaseDaoImpl<T, ID>(connectionSource, tableConfig) {
 		};
 		return configDao(tableConfig, createTable, dao);
 	}
@@ -835,7 +835,7 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 		} catch (SQLException ignored) {
 			// ignore any errors about missing tables
 		}
-		TableUtils.createTable(databaseType, connectionSource, tableConfig);
+		TableUtils.createTable(connectionSource, tableConfig);
 		if (dropAtEnd) {
 			dropClassSet.add(tableConfig);
 		}
@@ -843,7 +843,7 @@ public class AndroidStatementBuilderTest extends AndroidTestCase {
 
 	private <T> void dropTable(DatabaseTableConfig<T> tableConfig, boolean ignoreErrors) throws Exception {
 		// drop the table and ignore any errors along the way
-		TableUtils.dropTable(databaseType, connectionSource, tableConfig, ignoreErrors);
+		TableUtils.dropTable(connectionSource, tableConfig, ignoreErrors);
 	}
 
 	private <T, ID> Dao<T, ID> configDao(DatabaseTableConfig<T> tableConfig, boolean createTable, BaseDaoImpl<T, ID> dao)

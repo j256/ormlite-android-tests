@@ -98,7 +98,7 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 	protected Dao<Foo, Integer> fooDao;
 
 	public void testCreateDaoStatic() throws Exception {
-		Dao<Foo, Integer> fooDao = BaseDaoImpl.createDao(databaseType, connectionSource, Foo.class);
+		Dao<Foo, Integer> fooDao = BaseDaoImpl.createDao(connectionSource, Foo.class);
 		String stuff = "stuff";
 		Foo foo = new Foo();
 		foo.stuff = stuff;
@@ -531,7 +531,6 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 			// expected
 		}
 		fooDao.setConnectionSource(connectionSource);
-		fooDao.setDatabaseType(databaseType);
 		fooDao.initialize();
 		Foo foo = new Foo();
 		assertEquals(1, fooDao.create(foo));
@@ -1260,7 +1259,6 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		boolean gotId = false;
 		boolean gotStuff = false;
 		boolean gotVal = false;
-		// all this crap is here because of android column order
 		for (int colC = 0; colC < 3; colC++) {
 			if (colNames[colC].equalsIgnoreCase(Foo.ID_FIELD_NAME)) {
 				assertFalse(gotId);
@@ -2031,7 +2029,7 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	private <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
-		BaseDaoImpl<T, ID> dao = new BaseDaoImpl<T, ID>(databaseType, tableConfig) {
+		BaseDaoImpl<T, ID> dao = new BaseDaoImpl<T, ID>(connectionSource, tableConfig) {
 		};
 		return configDao(tableConfig, createTable, dao);
 	}
@@ -2043,7 +2041,7 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		} catch (SQLException ignored) {
 			// ignore any errors about missing tables
 		}
-		TableUtils.createTable(databaseType, connectionSource, tableConfig);
+		TableUtils.createTable(connectionSource, tableConfig);
 		if (dropAtEnd) {
 			dropClassSet.add(tableConfig);
 		}
@@ -2051,7 +2049,7 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 
 	private <T> void dropTable(DatabaseTableConfig<T> tableConfig, boolean ignoreErrors) throws Exception {
 		// drop the table and ignore any errors along the way
-		TableUtils.dropTable(databaseType, connectionSource, tableConfig, ignoreErrors);
+		TableUtils.dropTable(connectionSource, tableConfig, ignoreErrors);
 	}
 
 	private <T, ID> Dao<T, ID> configDao(DatabaseTableConfig<T> tableConfig, boolean createTable, BaseDaoImpl<T, ID> dao)

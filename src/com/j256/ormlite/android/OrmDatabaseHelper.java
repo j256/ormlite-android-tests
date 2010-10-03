@@ -11,8 +11,6 @@ import android.util.Log;
 import com.j256.ormlite.android.apptools.OrmLiteSqliteOpenHelper;
 import com.j256.ormlite.dao.BaseDaoImpl;
 import com.j256.ormlite.dao.Dao;
-import com.j256.ormlite.db.DatabaseType;
-import com.j256.ormlite.db.SqliteAndroidDatabaseType;
 import com.j256.ormlite.support.ConnectionSource;
 
 public class OrmDatabaseHelper extends OrmLiteSqliteOpenHelper {
@@ -26,7 +24,6 @@ public class OrmDatabaseHelper extends OrmLiteSqliteOpenHelper {
 	 */
 	private static final int DATABASE_VERSION = 1;
 
-	private final DatabaseType databaseType = new SqliteAndroidDatabaseType();
 	private final Map<Class<?>, Dao<?, ?>> daoMap = new HashMap<Class<?>, Dao<?, ?>>();
 
 	OrmDatabaseHelper(Context context) {
@@ -52,7 +49,7 @@ public class OrmDatabaseHelper extends OrmLiteSqliteOpenHelper {
 			@SuppressWarnings("unchecked")
 			Dao<T, ID> dao = (Dao<T, ID>) daoMap.get(clazz);
 			if (dao == null) {
-				dao = BaseDaoImpl.createDao(databaseType, getConnectionSource(), clazz);
+				dao = BaseDaoImpl.createDao(getConnectionSource(), clazz);
 				daoMap.put(clazz, dao);
 			} else {
 				((BaseDaoImpl<T, ID>) dao).setConnectionSource(getConnectionSource());
