@@ -17,6 +17,7 @@ import com.j256.ormlite.dao.BaseDaoImpl;
 import com.j256.ormlite.dao.CloseableIterator;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.RawResults;
+import com.j256.ormlite.dao.RawRowMapper;
 import com.j256.ormlite.db.DatabaseType;
 import com.j256.ormlite.db.SqliteAndroidDatabaseType;
 import com.j256.ormlite.field.DataType;
@@ -31,7 +32,7 @@ import com.j256.ormlite.table.DatabaseTable;
 import com.j256.ormlite.table.DatabaseTableConfig;
 import com.j256.ormlite.table.TableUtils;
 
-public class AndroidBaseDaoImplTest extends AndroidTestCase {
+public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	private final boolean CLOSE_IS_NOOP = true;
 	private final boolean UPDATE_ROWS_RETURNS_ONE = true;
@@ -59,10 +60,7 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 			helper.close();
 			helper = null;
 		}
-		if (connectionSource != null) {
-			connectionSource.close();
-			connectionSource = null;
-		}
+		closeConnectionSource();
 	}
 
 	/* ============================================================================================================== */
@@ -249,7 +247,7 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		try {
 			while (iterator.hasNext()) {
 				iterator.next();
-				closeConnection();
+				closeConnectionSource();
 			}
 			if (!CLOSE_IS_NOOP) {
 				fail("expected exception");
@@ -263,7 +261,7 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		Foo foo1 = new Foo();
 		foo1.stuff = "s1";
 		fooDao.create(foo1);
-		closeConnection();
+		closeConnectionSource();
 		try {
 			fooDao.iterator();
 			fail("expected exception");
@@ -279,7 +277,7 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		Iterator<Foo> iterator = fooDao.iterator();
 		try {
 			while (iterator.hasNext()) {
-				closeConnection();
+				closeConnectionSource();
 				iterator.next();
 			}
 			if (!CLOSE_IS_NOOP) {
@@ -298,7 +296,7 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		try {
 			while (iterator.hasNext()) {
 				iterator.next();
-				closeConnection();
+				closeConnectionSource();
 				iterator.remove();
 			}
 			fail("expected exception");
@@ -1249,56 +1247,7 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		foo.stuff = stuff;
 
 		RawResults results = fooDao.queryForAllRaw("select * from " + FOO_TABLE_NAME);
-		assertFalse(results.iterator().hasNext());
-		assertEquals(1, fooDao.create(foo));
-
-		results = fooDao.queryForAllRaw("select * from " + FOO_TABLE_NAME);
-		int colN = results.getNumberColumns();
-		String[] colNames = results.getColumnNames();
-		assertEquals(3, colNames.length);
-		boolean gotId = false;
-		boolean gotStuff = false;
-		boolean gotVal = false;
-		for (int colC = 0; colC < 3; colC++) {
-			if (colNames[colC].equalsIgnoreCase(Foo.ID_FIELD_NAME)) {
-				assertFalse(gotId);
-				gotId = true;
-			} else if (colNames[colC].equalsIgnoreCase(Foo.STUFF_FIELD_NAME)) {
-				assertFalse(gotStuff);
-				gotStuff = true;
-			} else if (colNames[colC].equalsIgnoreCase(Foo.VAL_FIELD_NAME)) {
-				assertFalse(gotVal);
-				gotVal = true;
-			}
-		}
-		CloseableIterator<String[]> iterator = results.iterator();
-		assertTrue(iterator.hasNext());
-		String[] result = iterator.next();
-		assertEquals(colN, result.length);
-		for (int colC = 0; colC < results.getNumberColumns(); colC++) {
-			if (results.getColumnNames()[colC] == "id") {
-				assertEquals(Integer.toString(foo.id), result[colC]);
-			}
-			if (results.getColumnNames()[colC] == "stuff") {
-				assertEquals(stuff, result[1]);
-			}
-		}
-		assertFalse(iterator.hasNext());
-	}
-
-	public void testQueryRawIterator() throws Exception {
-		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
-		Foo foo = new Foo();
-		String stuff = "eprjpejrre";
-		foo.stuff = stuff;
-
-		RawResults results = fooDao.iteratorRaw("select * from " + FOO_TABLE_NAME);
-		CloseableIterator<String[]> iterator = results.iterator();
-		try {
-			assertFalse(iterator.hasNext());
-		} finally {
-			iterator.close();
-		}
+		assertEquals(0, results.getResults().size());
 		assertEquals(1, fooDao.create(foo));
 
 		results = fooDao.queryForAllRaw("select * from " + FOO_TABLE_NAME);
@@ -1321,6 +1270,42 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 				gotVal = true;
 			}
 		}
+		assertTrue(gotId);
+		assertTrue(gotStuff);
+		assertTrue(gotVal);
+		List<String[]> resultList = results.getResults();
+		assertEquals(1, results.getResults().size());
+		String[] result = resultList.get(0);
+		assertEquals(colN, result.length);
+		for (int colC = 0; colC < results.getNumberColumns(); colC++) {
+			if (results.getColumnNames()[colC] == "id") {
+				assertEquals(Integer.toString(foo.id), result[colC]);
+			}
+			if (results.getColumnNames()[colC] == "stuff") {
+				assertEquals(stuff, result[1]);
+			}
+		}
+	}
+
+	public void testQueryRawIterator() throws Exception {
+		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
+		Foo foo = new Foo();
+		String stuff = "eprjpejrre";
+		foo.stuff = stuff;
+
+		RawResults results = fooDao.iteratorRaw("select * from " + FOO_TABLE_NAME);
+		CloseableIterator<String[]> iterator = results.iterator();
+		try {
+			assertFalse(iterator.hasNext());
+		} finally {
+			iterator.close();
+		}
+		assertEquals(1, fooDao.create(foo));
+
+		results = fooDao.queryForAllRaw("select * from " + FOO_TABLE_NAME);
+		int colN = results.getNumberColumns();
+		String[] colNames = results.getColumnNames();
+		assertEquals(3, colNames.length);
 		iterator = results.iterator();
 		try {
 			assertTrue(iterator.hasNext());
@@ -1338,6 +1323,43 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		} finally {
 			iterator.close();
 		}
+	}
+
+	public void testQueryRawMapped() throws Exception {
+		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
+		final Foo foo = new Foo();
+		String stuff = "eprjpejrre";
+		foo.stuff = stuff;
+
+		RawResults rawResults = fooDao.queryForAllRaw("select * from " + FOO_TABLE_NAME);
+		assertEquals(0, rawResults.getResults().size());
+		assertEquals(1, fooDao.create(foo));
+		rawResults = fooDao.queryForAllRaw("select * from " + FOO_TABLE_NAME);
+		List<Foo> results = rawResults.getMappedResults(new Mapper());
+		assertEquals(1, results.size());
+		Foo foo2 = results.get(0);
+		assertEquals(foo.id, foo2.id);
+		assertEquals(foo.stuff, foo2.stuff);
+		assertEquals(foo.val, foo2.val);
+	}
+
+	public void testIteratorRawMapped() throws Exception {
+		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
+		final Foo foo = new Foo();
+		String stuff = "eprjpejrre";
+		foo.stuff = stuff;
+
+		RawResults rawResults = fooDao.queryForAllRaw("select * from " + FOO_TABLE_NAME);
+		assertEquals(0, rawResults.getResults().size());
+		assertEquals(1, fooDao.create(foo));
+		rawResults = fooDao.queryForAllRaw("select * from " + FOO_TABLE_NAME);
+		Iterator<Foo> iterator = rawResults.iterator(new Mapper());
+		assertTrue(iterator.hasNext());
+		Foo foo2 = iterator.next();
+		assertEquals(foo.id, foo2.id);
+		assertEquals(foo.stuff, foo2.stuff);
+		assertEquals(foo.val, foo2.val);
+		assertFalse(iterator.hasNext());
 	}
 
 	public void testNotNullDefault() throws Exception {
@@ -2011,6 +2033,22 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		Date date;
 	}
 
+	private static class Mapper implements RawRowMapper<Foo> {
+		public Foo mapRow(String[] columnNames, String[] resultColumns) {
+			Foo foo = new Foo();
+			for (int i = 0; i < columnNames.length; i++) {
+				if (columnNames[i].equalsIgnoreCase(Foo.ID_FIELD_NAME)) {
+					foo.id = Integer.parseInt(resultColumns[i]);
+				} else if (columnNames[i].equalsIgnoreCase(Foo.STUFF_FIELD_NAME)) {
+					foo.stuff = resultColumns[i];
+				} else if (columnNames[i].equalsIgnoreCase(Foo.VAL_FIELD_NAME)) {
+					foo.val = Integer.parseInt(resultColumns[i]);
+				}
+			}
+			return foo;
+		}
+	}
+
 	/* ============================================================================================================ */
 
 	protected void closeConnection() throws Exception {
@@ -2063,5 +2101,16 @@ public class AndroidBaseDaoImplTest extends AndroidTestCase {
 		}
 		dao.initialize();
 		return dao;
+	}
+
+	private void closeConnectionSource() throws Exception {
+		if (connectionSource != null) {
+			for (DatabaseTableConfig<?> tableConfig : dropClassSet) {
+				dropTable(tableConfig, true);
+			}
+			connectionSource.close();
+			connectionSource = null;
+		}
+		databaseType = null;
 	}
 }
