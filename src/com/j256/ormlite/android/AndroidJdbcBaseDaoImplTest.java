@@ -895,6 +895,8 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		allTypes.floatField = floatVal;
 		allTypes.doubleField = doubleVal;
 		allTypes.ourEnum = ourEnum;
+		allTypes.ourEnum2 = ourEnum;
+		allTypes.ourEnum3 = ourEnum;
 		String stuff = "ewpjowpjogrjpogrjp";
 		SerialField obj = new SerialField();
 		obj.stuff = stuff;
@@ -903,6 +905,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		List<AllTypes> allTypesList = allDao.queryForAll();
 		assertEquals(1, allTypesList.size());
 		assertTrue(allDao.objectsEqual(allTypes, allTypesList.get(0)));
+		assertEquals(1, allDao.refresh(allTypes));
 	}
 
 	public void testAllTypesDefault() throws Exception {
@@ -1401,6 +1404,16 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertNull(allDates.get(0).date);
 	}
 
+	public void testDateRefresh() throws Exception {
+		Dao<LocalDate, Object> dao = createDao(LocalDate.class, true);
+		LocalDate localDate = new LocalDate();
+		// note: this does not have milliseconds
+		Date date = new Date(2131232000);
+		localDate.date = date;
+		assertEquals(1, dao.create(localDate));
+		assertEquals(1, dao.refresh(localDate));
+	}
+
 	public void testSpringBadWiring() throws Exception {
 		BaseDaoImpl<String, String> daoSupport = new BaseDaoImpl<String, String>(String.class) {
 		};
@@ -1724,6 +1737,8 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	protected static class AllTypes {
+		@DatabaseField(generatedId = true)
+		int id;
 		@DatabaseField
 		String stringField;
 		@DatabaseField
@@ -1750,6 +1765,10 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		SerialField objectField;
 		@DatabaseField
 		OurEnum ourEnum;
+		@DatabaseField(dataType = DataType.ENUM_STRING)
+		OurEnum ourEnum2;
+		@DatabaseField(dataType = DataType.ENUM_INTEGER)
+		OurEnum ourEnum3;
 		AllTypes() {
 		}
 	}

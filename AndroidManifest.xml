@@ -5,7 +5,6 @@
 	<application>
 		<uses-library android:name="android.test.runner" />
 	</application>
-	<uses-sdk android:minSdkVersion="3" />
 
 	<!--
 		This declares that this app uses the instrumentation test runner targeting the package of com.android.samples. To run
