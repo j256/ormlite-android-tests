@@ -1,6 +1,7 @@
 package com.j256.ormlite.android;
 
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -10,6 +11,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import android.test.AndroidTestCase;
 
@@ -319,11 +321,18 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testIteratePageSize() throws Exception {
-		for (int i = 0; i < 1000; i++) {
-			Foo foo = new Foo();
-			foo.stuff = Integer.toString(i);
-			assertEquals(1, fooDao.create(foo));
-		}
+		// do a mass insert of 1000 items
+		fooDao.callBatchTasks(new Callable<Void>() {
+			public Void call() throws Exception {
+				for (int i = 0; i < 1000; i++) {
+					Foo foo = new Foo();
+					foo.stuff = Integer.toString(i);
+					assertEquals(1, fooDao.create(foo));
+				}
+				return null;
+			}
+		});
+		// now delete them with the iterator to test page-size
 		Iterator<Foo> iterator = fooDao.iterator();
 		while (iterator.hasNext()) {
 			iterator.next();
@@ -356,12 +365,17 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testDeleteIds() throws Exception {
-		List<Integer> fooIdList = new ArrayList<Integer>();
-		for (int i = 0; i < 100; i++) {
-			Foo foo = new Foo();
-			assertEquals(1, fooDao.create(foo));
-			fooIdList.add(foo.id);
-		}
+		final List<Integer> fooIdList = new ArrayList<Integer>();
+		fooDao.callBatchTasks(new Callable<Void>() {
+			public Void call() throws Exception {
+				for (int i = 0; i < 100; i++) {
+					Foo foo = new Foo();
+					assertEquals(1, fooDao.create(foo));
+					fooIdList.add(foo.id);
+				}
+				return null;
+			}
+		});
 
 		int deleted = fooDao.deleteIds(fooIdList);
 		if (UPDATE_ROWS_RETURNS_ONE) {
@@ -537,11 +551,11 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	public void testForeignCreation() throws Exception {
 		Dao<ForeignWrapper, Integer> wrapperDao = createDao(ForeignWrapper.class, true);
-		Dao<Foreign, Integer> foreignDao = createDao(Foreign.class, true);
+		Dao<AllTypes, Integer> foreignDao = createDao(AllTypes.class, true);
 
-		Foreign foreign = new Foreign();
+		AllTypes foreign = new AllTypes();
 		String stuff1 = "stuff1";
-		foreign.stuff = stuff1;
+		foreign.stringField = stuff1;
 		// this sets the foreign id
 		assertEquals(1, foreignDao.create(foreign));
 
@@ -556,16 +570,16 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertTrue(wrapperDao.objectsEqual(wrapper, wrapper2));
 		// this won't be true because wrapper2.foreign is a shell
 		assertFalse(foreignDao.objectsEqual(foreign, wrapper2.foreign));
-		assertNull(wrapper2.foreign.stuff);
+		assertNull(wrapper2.foreign.stringField);
 		assertEquals(1, foreignDao.refresh(wrapper2.foreign));
 		// now it should be true
 		assertTrue(foreignDao.objectsEqual(foreign, wrapper2.foreign));
-		assertEquals(stuff1, wrapper2.foreign.stuff);
+		assertEquals(stuff1, wrapper2.foreign.stringField);
 
 		// create a new foreign
-		foreign = new Foreign();
+		foreign = new AllTypes();
 		String stuff2 = "stuff2";
-		foreign.stuff = stuff2;
+		foreign.stringField = stuff2;
 		// this sets the foreign id
 		assertEquals(1, foreignDao.create(foreign));
 
@@ -580,20 +594,20 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertTrue(wrapperDao.objectsEqual(wrapper, wrapper2));
 		// this won't be true because wrapper2.foreign is a shell
 		assertFalse(foreignDao.objectsEqual(foreign, wrapper2.foreign));
-		assertNull(wrapper2.foreign.stuff);
+		assertNull(wrapper2.foreign.stringField);
 		assertEquals(1, foreignDao.refresh(wrapper2.foreign));
 		// now it should be true
 		assertTrue(foreignDao.objectsEqual(foreign, wrapper2.foreign));
-		assertEquals(stuff2, wrapper2.foreign.stuff);
+		assertEquals(stuff2, wrapper2.foreign.stringField);
 	}
 
 	public void testForeignRefreshNoChange() throws Exception {
 		Dao<ForeignWrapper, Integer> wrapperDao = createDao(ForeignWrapper.class, true);
-		Dao<Foreign, Integer> foreignDao = createDao(Foreign.class, true);
+		Dao<AllTypes, Integer> foreignDao = createDao(AllTypes.class, true);
 
-		Foreign foreign = new Foreign();
+		AllTypes foreign = new AllTypes();
 		String stuff1 = "stuff1";
-		foreign.stuff = stuff1;
+		foreign.stringField = stuff1;
 		// this sets the foreign id
 		assertEquals(1, foreignDao.create(foreign));
 
@@ -604,18 +618,18 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 		ForeignWrapper wrapper2 = wrapperDao.queryForId(wrapper.id);
 		assertEquals(1, foreignDao.refresh(wrapper2.foreign));
-		Foreign foreign2 = wrapper2.foreign;
-		assertEquals(stuff1, foreign2.stuff);
+		AllTypes foreign2 = wrapper2.foreign;
+		assertEquals(stuff1, foreign2.stringField);
 
 		assertEquals(1, wrapperDao.refresh(wrapper2));
 		assertSame(foreign2, wrapper2.foreign);
-		assertEquals(stuff1, wrapper2.foreign.stuff);
+		assertEquals(stuff1, wrapper2.foreign.stringField);
 
 		// now, in the background, we change the foreign
 		ForeignWrapper wrapper3 = wrapperDao.queryForId(wrapper.id);
-		Foreign foreign3 = new Foreign();
+		AllTypes foreign3 = new AllTypes();
 		String stuff3 = "stuff3";
-		foreign3.stuff = stuff3;
+		foreign3.stringField = stuff3;
 		assertEquals(1, foreignDao.create(foreign3));
 		wrapper3.foreign = foreign3;
 		assertEquals(1, wrapperDao.update(wrapper3));
@@ -623,17 +637,17 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(1, wrapperDao.refresh(wrapper2));
 		// now all of a sudden wrapper2 should not have the same foreign field
 		assertNotSame(foreign2, wrapper2.foreign);
-		assertNull(wrapper2.foreign.stuff);
+		assertNull(wrapper2.foreign.stringField);
 	}
 
 	public void testMultipleForeignWrapper() throws Exception {
 		Dao<MultipleForeignWrapper, Integer> multipleWrapperDao = createDao(MultipleForeignWrapper.class, true);
 		Dao<ForeignWrapper, Integer> wrapperDao = createDao(ForeignWrapper.class, true);
-		Dao<Foreign, Integer> foreignDao = createDao(Foreign.class, true);
+		Dao<AllTypes, Integer> foreignDao = createDao(AllTypes.class, true);
 
-		Foreign foreign = new Foreign();
+		AllTypes foreign = new AllTypes();
 		String stuff1 = "stuff1";
-		foreign.stuff = stuff1;
+		foreign.stringField = stuff1;
 		// this sets the foreign id
 		assertEquals(1, foreignDao.create(foreign));
 
@@ -650,20 +664,20 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 		MultipleForeignWrapper multiWrapper2 = multipleWrapperDao.queryForId(multiWrapper.id);
 		assertEquals(foreign.id, multiWrapper2.foreign.id);
-		assertNull(multiWrapper2.foreign.stuff);
+		assertNull(multiWrapper2.foreign.stringField);
 		assertEquals(wrapper.id, multiWrapper2.foreignWrapper.id);
 		assertNull(multiWrapper2.foreignWrapper.foreign);
 
 		assertEquals(1, foreignDao.refresh(multiWrapper2.foreign));
-		assertEquals(stuff1, multiWrapper2.foreign.stuff);
+		assertEquals(stuff1, multiWrapper2.foreign.stringField);
 		assertNull(multiWrapper2.foreignWrapper.foreign);
 
 		assertEquals(1, wrapperDao.refresh(multiWrapper2.foreignWrapper));
 		assertEquals(foreign.id, multiWrapper2.foreignWrapper.foreign.id);
-		assertNull(multiWrapper2.foreignWrapper.foreign.stuff);
+		assertNull(multiWrapper2.foreignWrapper.foreign.stringField);
 
 		assertEquals(1, foreignDao.refresh(multiWrapper2.foreignWrapper.foreign));
-		assertEquals(stuff1, multiWrapper2.foreignWrapper.foreign.stuff);
+		assertEquals(stuff1, multiWrapper2.foreignWrapper.foreign.stringField);
 	}
 
 	public void testRefreshNull() throws Exception {
@@ -898,7 +912,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		allTypes.ourEnum2 = ourEnum;
 		allTypes.ourEnum3 = ourEnum;
 		String stuff = "ewpjowpjogrjpogrjp";
-		SerialField obj = new SerialField();
+		SerialData obj = new SerialData();
 		obj.stuff = stuff;
 		allTypes.objectField = obj;
 		assertEquals(1, allDao.create(allTypes));
@@ -947,6 +961,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		numberMaxs.floatField = 1.0e+37F;
 		numberMaxs.doubleField = 1.0e+307;
 		assertEquals(1, numberDao.create(numberMaxs));
+		assertEquals(1, numberDao.refresh(numberMaxs));
 
 		List<NumberTypes> allTypesList = numberDao.queryForAll();
 		assertEquals(3, allTypesList.size());
@@ -956,7 +971,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testStringWidthTooLong() throws Exception {
-		if (!databaseType.isVarcharFieldWidthSupported()) {
+		if (!connectionSource.getDatabaseType().isVarcharFieldWidthSupported()) {
 			return;
 		}
 		Dao<StringWidth, Object> stringWidthDao = createDao(StringWidth.class, true);
@@ -1033,7 +1048,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	public void testEscapeCharInField() throws Exception {
 		StringBuilder sb = new StringBuilder();
 		String word = "foo";
-		databaseType.appendEscapedWord(sb, word);
+		connectionSource.getDatabaseType().appendEscapedWord(sb, word);
 		String escaped = sb.toString();
 		int index = escaped.indexOf(word);
 		String escapeString = escaped.substring(0, index);
@@ -1056,7 +1071,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		Dao<ObjectHolder, Integer> objDao = createDao(ObjectHolder.class, true);
 
 		ObjectHolder foo1 = new ObjectHolder();
-		foo1.obj = new SerialField();
+		foo1.obj = new SerialData();
 		String stuff = "123j21p3j312";
 		foo1.obj.stuff = stuff;
 		String strObj = "fjpwefefwpjoefwjpojopfew";
@@ -1168,9 +1183,10 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		all.longField = 0L;
 		all.floatField = 0F;
 		all.doubleField = 0D;
-		all.objectField = new SerialField();
+		all.objectField = new SerialData();
 		all.ourEnum = OurEnum.FIRST;
 		assertEquals(1, allDao.create(all));
+		assertEquals(1, allDao.refresh(all));
 		List<AllObjectTypes> allList = allDao.queryForAll();
 		assertEquals(1, allList.size());
 		assertTrue(allDao.objectsEqual(all, allList.get(0)));
@@ -1180,6 +1196,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		Dao<AllTypesDefault, Object> allDao = createDao(AllTypesDefault.class, true);
 		AllTypesDefault all = new AllTypesDefault();
 		assertEquals(1, allDao.create(all));
+		assertEquals(1, allDao.refresh(all));
 		List<AllTypesDefault> allList = allDao.queryForAll();
 		assertEquals(1, allList.size());
 		all.stringField = DEFAULT_STRING_VALUE;
@@ -1450,11 +1467,13 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	public void testForeignQuery() throws Exception {
 		Dao<ForeignWrapper, Integer> wrapperDao = createDao(ForeignWrapper.class, true);
-		Dao<Foreign, Integer> foreignDao = createDao(Foreign.class, true);
+		Dao<AllTypes, Integer> foreignDao = createDao(AllTypes.class, true);
 
-		Foreign foreign = new Foreign();
+		AllTypes foreign = new AllTypes();
 		String stuff1 = "stuff1";
-		foreign.stuff = stuff1;
+		foreign.stringField = stuff1;
+		Date date = new Date();
+		foreign.dateField = date;
 		// this sets the foreign id
 		assertEquals(1, foreignDao.create(foreign));
 
@@ -1598,6 +1617,127 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(newStuff, foo.stuff);
 	}
 
+	public void testDateAsId() throws Exception {
+		// no milliseconds
+		checkTypeAsId(DateId.class, new Date(1232312313000L), new Date(1232312783000L));
+	}
+
+	public void testDateLongAsId() throws Exception {
+		// no milliseconds
+		checkTypeAsId(DateLongId.class, new Date(1232312313000L), new Date(1232312783000L));
+	}
+
+	public void testDateStringAsId() throws Exception {
+		// no milliseconds
+		checkTypeAsId(DateStringId.class, new Date(1232312313000L), new Date(1232312783000L));
+	}
+
+	public void testEnumStringAsId() throws Exception {
+		checkTypeAsId(EnumStringId.class, OurEnum.SECOND, OurEnum.FIRST);
+	}
+
+	public void testEnumIntegerAsId() throws Exception {
+		checkTypeAsId(EnumIntegerId.class, OurEnum.SECOND, OurEnum.FIRST);
+	}
+
+	public void testSerializableAsId() throws Exception {
+		if (!connectionSource.getDatabaseType().isSerializableIdAllowed()) {
+			return;
+		}
+		SerialData id1 = new SerialData();
+		id1.stuff = "stuff1";
+		SerialData id2 = new SerialData();
+		id2.stuff = "stuff2";
+		checkTypeAsId(SerializableId.class, id1, id2);
+	}
+
+	/* ==================================================================================== */
+
+	private <T extends TestableType<ID>, ID> void checkTypeAsId(Class<T> clazz, ID id1, ID id2) throws Exception {
+		Constructor<T> constructor = clazz.getDeclaredConstructor();
+		Dao<T, ID> dao = createDao(clazz, true);
+
+		String s1 = "stuff";
+		T data1 = constructor.newInstance();
+		data1.setId(id1);
+		data1.setStuff(s1);
+
+		// create it
+		assertEquals(1, dao.create(data1));
+		// refresh it
+		assertEquals(1, dao.refresh(data1));
+
+		// now we query for foo from the database to make sure it was persisted right
+		T data2 = dao.queryForId(id1);
+		assertNotNull(data2);
+		assertEquals(data1.getId(), data2.getId());
+		assertEquals(s1, data2.getStuff());
+
+		// now we update 1 row in a the database after changing stuff
+		String s2 = "stuff2";
+		data2.setStuff(s2);
+		assertEquals(1, dao.update(data2));
+
+		// now we get it from the db again to make sure it was updated correctly
+		T data3 = dao.queryForId(id1);
+		assertEquals(s2, data3.getStuff());
+
+		// change its id
+		assertEquals(1, dao.updateId(data2, id2));
+		// the old id should not exist
+		assertNull(dao.queryForId(id1));
+		T data4 = dao.queryForId(id2);
+		assertNotNull(data4);
+		assertEquals(s2, data4.getStuff());
+
+		// delete it
+		assertEquals(1, dao.delete(data2));
+		// should not find it
+		assertNull(dao.queryForId(id1));
+		assertNull(dao.queryForId(id2));
+
+		// create data1 and data2
+		data1.setId(id1);
+		assertEquals(1, dao.create(data1));
+		data2 = constructor.newInstance();
+		data2.setId(id2);
+		assertEquals(1, dao.create(data2));
+
+		// delete a collection of ids
+		List<ID> idList = new ArrayList<ID>();
+		idList.add(id1);
+		idList.add(id2);
+		if (UPDATE_ROWS_RETURNS_ONE) {
+			assertEquals(1, dao.deleteIds(idList));
+		} else {
+			assertEquals(2, dao.deleteIds(idList));
+		}
+		assertNull(dao.queryForId(id1));
+		assertNull(dao.queryForId(id2));
+
+		// delete a collection of objects
+		assertEquals(1, dao.create(data1));
+		assertEquals(1, dao.create(data2));
+		List<T> dataList = new ArrayList<T>();
+		dataList.add(data1);
+		dataList.add(data2);
+		if (UPDATE_ROWS_RETURNS_ONE) {
+			assertEquals(1, dao.delete(dataList));
+		} else {
+			assertEquals(2, dao.delete(dataList));
+		}
+
+		assertNull(dao.queryForId(id1));
+		assertNull(dao.queryForId(id2));
+	}
+
+	private interface TestableType<ID> {
+		String getStuff();
+		void setStuff(String stuff);
+		ID getId();
+		void setId(ID id);
+	}
+
 	/* ==================================================================================== */
 
 	@DatabaseTable(tableName = FOO_TABLE_NAME)
@@ -1641,26 +1781,19 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		public String id;
 	}
 
-	private static class Foreign {
-		@DatabaseField(generatedId = true)
-		int id;
-		@DatabaseField
-		String stuff;
-	}
-
 	private static class ForeignWrapper {
 		private final static String FOREIGN_FIELD_NAME = "foreign";
 		@DatabaseField(generatedId = true)
 		int id;
 		@DatabaseField(foreign = true, columnName = FOREIGN_FIELD_NAME)
-		Foreign foreign;
+		AllTypes foreign;
 	}
 
 	private static class MultipleForeignWrapper {
 		@DatabaseField(generatedId = true)
 		int id;
 		@DatabaseField(foreign = true)
-		Foreign foreign;
+		AllTypes foreign;
 		@DatabaseField(foreign = true)
 		ForeignWrapper foreignWrapper;
 	}
@@ -1729,7 +1862,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	protected static class GeneratedId {
 		@DatabaseField(generatedId = true)
-		public int id;
+		int id;
 		@DatabaseField
 		String other;
 		public GeneratedId() {
@@ -1762,7 +1895,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		@DatabaseField
 		double doubleField;
 		@DatabaseField
-		SerialField objectField;
+		SerialData objectField;
 		@DatabaseField
 		OurEnum ourEnum;
 		@DatabaseField(dataType = DataType.ENUM_STRING)
@@ -1774,6 +1907,8 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	protected static class AllTypesDefault {
+		@DatabaseField(generatedId = true)
+		int id;
 		@DatabaseField(defaultValue = DEFAULT_STRING_VALUE)
 		String stringField;
 		@DatabaseField(defaultValue = DEFAULT_DATE_VALUE)
@@ -1811,7 +1946,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		@DatabaseField(defaultValue = DEFAULT_DOUBLE_VALUE)
 		Double doubleObj;
 		@DatabaseField
-		SerialField objectField;
+		SerialData objectField;
 		@DatabaseField(defaultValue = DEFAULT_ENUM_VALUE)
 		OurEnum ourEnum;
 		@DatabaseField(defaultValue = DEFAULT_ENUM_NUMBER_VALUE, dataType = DataType.ENUM_INTEGER)
@@ -1830,6 +1965,8 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	protected static class AllObjectTypes {
+		@DatabaseField(generatedId = true)
+		int id;
 		@DatabaseField
 		String stringField;
 		@DatabaseField
@@ -1849,7 +1986,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		@DatabaseField
 		Double doubleField;
 		@DatabaseField
-		SerialField objectField;
+		SerialData objectField;
 		@DatabaseField
 		OurEnum ourEnum;
 		AllObjectTypes() {
@@ -1857,6 +1994,8 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	protected static class NumberTypes {
+		@DatabaseField(generatedId = true)
+		public int id;
 		@DatabaseField
 		public byte byteField;
 		@DatabaseField
@@ -1909,7 +2048,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	// test the field name that has a capital letter in it
 	protected static class GeneratedColumnCapital {
 		@DatabaseField(generatedId = true, columnName = "idCap")
-		public int id;
+		int id;
 		@DatabaseField
 		String other;
 		public GeneratedColumnCapital() {
@@ -1920,7 +2059,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		@DatabaseField(generatedId = true)
 		public int id;
 		@DatabaseField
-		public SerialField obj;
+		public SerialData obj;
 		@DatabaseField(dataType = DataType.SERIALIZABLE)
 		public String strObj;
 		public ObjectHolder() {
@@ -1936,10 +2075,10 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
-	protected static class SerialField implements Serializable {
+	protected static class SerialData implements Serializable {
 		private static final long serialVersionUID = -3883857119616908868L;
 		public String stuff;
-		public SerialField() {
+		public SerialData() {
 		}
 		@Override
 		public int hashCode() {
@@ -1950,7 +2089,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 			if (obj == null || obj.getClass() != getClass()) {
 				return false;
 			}
-			SerialField other = (SerialField) obj;
+			SerialData other = (SerialData) obj;
 			if (stuff == null) {
 				return other.stuff == null;
 			} else {
@@ -2047,9 +2186,129 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	@DatabaseTable
 	protected static class LocalDate {
 		@DatabaseField(generatedId = true)
-		public int id;
+		int id;
 		@DatabaseField
 		Date date;
+	}
+
+	@DatabaseTable
+	protected static class DateId implements TestableType<Date> {
+		@DatabaseField(id = true)
+		Date date;
+		@DatabaseField
+		String stuff;
+		public Date getId() {
+			return date;
+		}
+		public void setId(Date id) {
+			this.date = id;
+		}
+		public String getStuff() {
+			return stuff;
+		}
+		public void setStuff(String stuff) {
+			this.stuff = stuff;
+		}
+	}
+
+	@DatabaseTable
+	protected static class DateLongId implements TestableType<Date> {
+		@DatabaseField(id = true, dataType = DataType.JAVA_DATE_LONG)
+		Date date;
+		@DatabaseField
+		String stuff;
+		public Date getId() {
+			return date;
+		}
+		public void setId(Date id) {
+			this.date = id;
+		}
+		public String getStuff() {
+			return stuff;
+		}
+		public void setStuff(String stuff) {
+			this.stuff = stuff;
+		}
+	}
+
+	@DatabaseTable
+	protected static class DateStringId implements TestableType<Date> {
+		@DatabaseField(id = true, dataType = DataType.JAVA_DATE_STRING)
+		Date date;
+		@DatabaseField
+		String stuff;
+		public Date getId() {
+			return date;
+		}
+		public void setId(Date id) {
+			this.date = id;
+		}
+		public String getStuff() {
+			return stuff;
+		}
+		public void setStuff(String stuff) {
+			this.stuff = stuff;
+		}
+	}
+
+	@DatabaseTable
+	protected static class EnumStringId implements TestableType<OurEnum> {
+		@DatabaseField(id = true)
+		OurEnum ourEnum;
+		@DatabaseField
+		String stuff;
+		public OurEnum getId() {
+			return ourEnum;
+		}
+		public void setId(OurEnum id) {
+			this.ourEnum = id;
+		}
+		public String getStuff() {
+			return stuff;
+		}
+		public void setStuff(String stuff) {
+			this.stuff = stuff;
+		}
+	}
+
+	@DatabaseTable
+	protected static class EnumIntegerId implements TestableType<OurEnum> {
+		@DatabaseField(id = true, dataType = DataType.ENUM_INTEGER)
+		OurEnum ourEnum;
+		@DatabaseField
+		String stuff;
+		public OurEnum getId() {
+			return ourEnum;
+		}
+		public void setId(OurEnum id) {
+			this.ourEnum = id;
+		}
+		public String getStuff() {
+			return stuff;
+		}
+		public void setStuff(String stuff) {
+			this.stuff = stuff;
+		}
+	}
+
+	@DatabaseTable
+	protected static class SerializableId implements TestableType<SerialData> {
+		@DatabaseField(id = true)
+		SerialData serial;
+		@DatabaseField
+		String stuff;
+		public SerialData getId() {
+			return serial;
+		}
+		public void setId(SerialData id) {
+			this.serial = id;
+		}
+		public String getStuff() {
+			return stuff;
+		}
+		public void setStuff(String stuff) {
+			this.stuff = stuff;
+		}
 	}
 
 	private static class Mapper implements RawRowMapper<Foo> {
