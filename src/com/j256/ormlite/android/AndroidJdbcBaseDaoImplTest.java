@@ -7,9 +7,11 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -881,7 +883,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testAllTypes() throws Exception {
-		Dao<AllTypes, Object> allDao = createDao(AllTypes.class, true);
+		Dao<AllTypes, Integer> allDao = createDao(AllTypes.class, true);
 		AllTypes allTypes = new AllTypes();
 		String stringVal = "some string";
 		boolean boolVal = true;
@@ -896,7 +898,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		long longVal = 1231231231231L;
 		float floatVal = 123.13F;
 		double doubleVal = 1413312.1231233;
-		OurEnum ourEnum = OurEnum.FIRST;
+		OurEnum enumVal = OurEnum.FIRST;
 		allTypes.stringField = stringVal;
 		allTypes.booleanField = boolVal;
 		allTypes.dateField = dateVal;
@@ -908,22 +910,72 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		allTypes.longField = longVal;
 		allTypes.floatField = floatVal;
 		allTypes.doubleField = doubleVal;
-		allTypes.ourEnum = ourEnum;
-		allTypes.ourEnum2 = ourEnum;
-		allTypes.ourEnum3 = ourEnum;
-		String stuff = "ewpjowpjogrjpogrjp";
+		allTypes.enumField = enumVal;
+		allTypes.enumStringField = enumVal;
+		allTypes.enumIntegerField = enumVal;
 		SerialData obj = new SerialData();
-		obj.stuff = stuff;
-		allTypes.objectField = obj;
+		String key = "key";
+		String value = "value";
+		obj.addEntry(key, value);
+		allTypes.serialField = obj;
+		assertEquals(1, allDao.create(allTypes));
+		List<AllTypes> allTypesList = allDao.queryForAll();
+		assertEquals(1, allTypesList.size());
+		assertTrue(allDao.objectsEqual(allTypes, allTypesList.get(0)));
+		assertEquals(value, allTypesList.get(0).serialField.map.get(key));
+		assertEquals(1, allDao.refresh(allTypes));
+		// queries on all fields
+		QueryBuilder<AllTypes, Integer> qb = allDao.queryBuilder();
+		checkQueryResult(allDao, qb, allTypes, AllTypes.STRING_FIELD_NAME, stringVal);
+		checkQueryResult(allDao, qb, allTypes, AllTypes.BOOLEAN_FIELD_NAME, boolVal);
+		// date tested below
+		checkQueryResult(allDao, qb, allTypes, AllTypes.DATE_LONG_FIELD_NAME, dateLongVal);
+		checkQueryResult(allDao, qb, allTypes, AllTypes.DATE_STRING_FIELD_NAME, dateStringVal);
+		checkQueryResult(allDao, qb, allTypes, AllTypes.BYTE_FIELD_NAME, byteVal);
+		checkQueryResult(allDao, qb, allTypes, AllTypes.SHORT_FIELD_NAME, shortVal);
+		checkQueryResult(allDao, qb, allTypes, AllTypes.INT_FIELD_NAME, intVal);
+		checkQueryResult(allDao, qb, allTypes, AllTypes.LONG_FIELD_NAME, longVal);
+		// float tested below
+		checkQueryResult(allDao, qb, allTypes, AllTypes.DOUBLE_FIELD_NAME, doubleVal);
+		checkQueryResult(allDao, qb, allTypes, AllTypes.ENUM_FIELD_NAME, enumVal);
+		checkQueryResult(allDao, qb, allTypes, AllTypes.ENUM_STRING_FIELD_NAME, enumVal);
+		checkQueryResult(allDao, qb, allTypes, AllTypes.ENUM_INTEGER_FIELD_NAME, enumVal);
+	}
+
+	public void testAllTypesDate() throws Exception {
+		Dao<AllTypes, Integer> allDao = createDao(AllTypes.class, true);
+		AllTypes allTypes = new AllTypes();
+		// we have to round this because the db may not be storing millis
+		long millis = (System.currentTimeMillis() / 1000) * 1000;
+		Date dateVal = new Date(millis);
+		allTypes.dateField = dateVal;
 		assertEquals(1, allDao.create(allTypes));
 		List<AllTypes> allTypesList = allDao.queryForAll();
 		assertEquals(1, allTypesList.size());
 		assertTrue(allDao.objectsEqual(allTypes, allTypesList.get(0)));
 		assertEquals(1, allDao.refresh(allTypes));
+		// queries on all fields
+		QueryBuilder<AllTypes, Integer> qb = allDao.queryBuilder();
+		checkQueryResult(allDao, qb, allTypes, AllTypes.DATE_FIELD_NAME, dateVal);
+	}
+
+	public void testAllTypesFloat() throws Exception {
+		Dao<AllTypes, Integer> allDao = createDao(AllTypes.class, true);
+		AllTypes allTypes = new AllTypes();
+		float floatVal = 123.13F;
+		allTypes.floatField = floatVal;
+		assertEquals(1, allDao.create(allTypes));
+		List<AllTypes> allTypesList = allDao.queryForAll();
+		assertEquals(1, allTypesList.size());
+		assertTrue(allDao.objectsEqual(allTypes, allTypesList.get(0)));
+		assertEquals(1, allDao.refresh(allTypes));
+		// queries on all fields
+		QueryBuilder<AllTypes, Integer> qb = allDao.queryBuilder();
+		checkQueryResult(allDao, qb, allTypes, AllTypes.FLOAT_FIELD_NAME, floatVal);
 	}
 
 	public void testAllTypesDefault() throws Exception {
-		Dao<AllTypes, Object> allDao = createDao(AllTypes.class, true);
+		Dao<AllTypes, Integer> allDao = createDao(AllTypes.class, true);
 		AllTypes allTypes = new AllTypes();
 		assertEquals(1, allDao.create(allTypes));
 		List<AllTypes> allTypesList = allDao.queryForAll();
@@ -932,7 +984,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testNumberTypes() throws Exception {
-		Dao<NumberTypes, Object> numberDao = createDao(NumberTypes.class, true);
+		Dao<NumberTypes, Integer> numberDao = createDao(NumberTypes.class, true);
 
 		NumberTypes numberMins = new NumberTypes();
 		numberMins.byteField = Byte.MIN_VALUE;
@@ -1072,8 +1124,9 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 		ObjectHolder foo1 = new ObjectHolder();
 		foo1.obj = new SerialData();
-		String stuff = "123j21p3j312";
-		foo1.obj.stuff = stuff;
+		String key = "key2";
+		String value = "val2";
+		foo1.obj.addEntry(key, value);
 		String strObj = "fjpwefefwpjoefwjpojopfew";
 		foo1.strObj = strObj;
 		assertEquals(1, objDao.create(foo1));
@@ -1089,7 +1142,6 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		} catch (IllegalArgumentException e) {
 			// expected
 		}
-
 	}
 
 	public void testStringEnum() throws Exception {
@@ -1243,7 +1295,6 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		} catch (SQLException e) {
 			// expected
 		}
-
 	}
 
 	public void testNullUnPersistToIntPrimitive() throws Exception {
@@ -1257,7 +1308,6 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		} catch (SQLException e) {
 			// expected
 		}
-
 	}
 
 	public void testQueryRaw() throws Exception {
@@ -1641,14 +1691,23 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testSerializableAsId() throws Exception {
-		if (!connectionSource.getDatabaseType().isSerializableIdAllowed()) {
-			return;
+		try {
+			createDao(SerializableId.class, true);
+			fail("expected exception");
+		} catch (SQLException e) {
+			// expected
 		}
-		SerialData id1 = new SerialData();
-		id1.stuff = "stuff1";
-		SerialData id2 = new SerialData();
-		id2.stuff = "stuff2";
-		checkTypeAsId(SerializableId.class, id1, id2);
+	}
+
+	public void testSerializableWhere() throws Exception {
+		Dao<AllTypes, Object> allDao = createDao(AllTypes.class, true);
+		try {
+			// can't query for a serial field
+			allDao.queryBuilder().where().eq(AllTypes.SERIAL_FIELD_NAME, new SelectArg());
+			fail("expected exception");
+		} catch (SQLException e) {
+			// expected
+		}
 	}
 
 	/* ==================================================================================== */
@@ -1670,7 +1729,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		// now we query for foo from the database to make sure it was persisted right
 		T data2 = dao.queryForId(id1);
 		assertNotNull(data2);
-		assertEquals(data1.getId(), data2.getId());
+		assertEquals(id1, data2.getId());
 		assertEquals(s1, data2.getStuff());
 
 		// now we update 1 row in a the database after changing stuff
@@ -1703,6 +1762,13 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		data2.setId(id2);
 		assertEquals(1, dao.create(data2));
 
+		data3 = dao.queryForId(id1);
+		assertNotNull(data3);
+		assertEquals(id1, data3.getId());
+		data4 = dao.queryForId(id2);
+		assertNotNull(data4);
+		assertEquals(id2, data4.getId());
+
 		// delete a collection of ids
 		List<ID> idList = new ArrayList<ID>();
 		idList.add(id1);
@@ -1729,6 +1795,14 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 		assertNull(dao.queryForId(id1));
 		assertNull(dao.queryForId(id2));
+	}
+
+	private void checkQueryResult(Dao<AllTypes, Integer> allDao, QueryBuilder<AllTypes, Integer> qb, AllTypes allTypes,
+			String fieldName, Object value) throws SQLException {
+		qb.where().eq(fieldName, value);
+		List<AllTypes> results = allDao.query(qb.prepare());
+		assertEquals(1, results.size());
+		assertTrue(allDao.objectsEqual(allTypes, results.get(0)));
 	}
 
 	private interface TestableType<ID> {
@@ -1870,38 +1944,53 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	protected static class AllTypes {
+		public static final String STRING_FIELD_NAME = "stringField";
+		public static final String BOOLEAN_FIELD_NAME = "booleanField";
+		public static final String DATE_FIELD_NAME = "dateField";
+		public static final String DATE_LONG_FIELD_NAME = "dateLongField";
+		public static final String DATE_STRING_FIELD_NAME = "dateStringField";
+		public static final String SERIAL_FIELD_NAME = "serialField";
+		public static final String BYTE_FIELD_NAME = "byteField";
+		public static final String SHORT_FIELD_NAME = "shortField";
+		public static final String INT_FIELD_NAME = "intField";
+		public static final String LONG_FIELD_NAME = "longField";
+		public static final String FLOAT_FIELD_NAME = "floatField";
+		public static final String DOUBLE_FIELD_NAME = "doubleField";
+		public static final String ENUM_FIELD_NAME = "enumField";
+		public static final String ENUM_STRING_FIELD_NAME = "enumStringField";
+		public static final String ENUM_INTEGER_FIELD_NAME = "enumIntegerField";
 		@DatabaseField(generatedId = true)
 		int id;
-		@DatabaseField
+		@DatabaseField(columnName = STRING_FIELD_NAME)
 		String stringField;
-		@DatabaseField
+		@DatabaseField(columnName = BOOLEAN_FIELD_NAME)
 		boolean booleanField;
-		@DatabaseField
+		@DatabaseField(columnName = DATE_FIELD_NAME)
 		Date dateField;
-		@DatabaseField(dataType = DataType.JAVA_DATE_LONG)
+		@DatabaseField(columnName = DATE_LONG_FIELD_NAME, dataType = DataType.JAVA_DATE_LONG)
 		Date dateLongField;
-		@DatabaseField(dataType = DataType.JAVA_DATE_STRING, format = DEFAULT_DATE_STRING_FORMAT)
+		@DatabaseField(columnName = DATE_STRING_FIELD_NAME, dataType = DataType.JAVA_DATE_STRING, format = DEFAULT_DATE_STRING_FORMAT)
 		Date dateStringField;
-		@DatabaseField
+		@DatabaseField(columnName = BYTE_FIELD_NAME)
 		byte byteField;
-		@DatabaseField
+		@DatabaseField(columnName = SHORT_FIELD_NAME)
 		short shortField;
-		@DatabaseField
+		@DatabaseField(columnName = INT_FIELD_NAME)
 		int intField;
-		@DatabaseField
+		@DatabaseField(columnName = LONG_FIELD_NAME)
 		long longField;
-		@DatabaseField
+		@DatabaseField(columnName = FLOAT_FIELD_NAME)
 		float floatField;
-		@DatabaseField
+		@DatabaseField(columnName = DOUBLE_FIELD_NAME)
 		double doubleField;
-		@DatabaseField
-		SerialData objectField;
-		@DatabaseField
-		OurEnum ourEnum;
-		@DatabaseField(dataType = DataType.ENUM_STRING)
-		OurEnum ourEnum2;
-		@DatabaseField(dataType = DataType.ENUM_INTEGER)
-		OurEnum ourEnum3;
+		@DatabaseField(columnName = SERIAL_FIELD_NAME)
+		SerialData serialField;
+		@DatabaseField(columnName = ENUM_FIELD_NAME)
+		OurEnum enumField;
+		@DatabaseField(columnName = ENUM_STRING_FIELD_NAME, dataType = DataType.ENUM_STRING)
+		OurEnum enumStringField;
+		@DatabaseField(columnName = ENUM_INTEGER_FIELD_NAME, dataType = DataType.ENUM_INTEGER)
+		OurEnum enumIntegerField;
 		AllTypes() {
 		}
 	}
@@ -2077,12 +2166,18 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	protected static class SerialData implements Serializable {
 		private static final long serialVersionUID = -3883857119616908868L;
-		public String stuff;
+		public Map<String, String> map;
 		public SerialData() {
+		}
+		public void addEntry(String key, String value) {
+			if (map == null) {
+				map = new HashMap<String, String>();
+			}
+			map.put(key, value);
 		}
 		@Override
 		public int hashCode() {
-			return stuff.hashCode();
+			return map.hashCode();
 		}
 		@Override
 		public boolean equals(Object obj) {
@@ -2090,10 +2185,10 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 				return false;
 			}
 			SerialData other = (SerialData) obj;
-			if (stuff == null) {
-				return other.stuff == null;
+			if (map == null) {
+				return other.map == null;
 			} else {
-				return stuff.equals(other.stuff);
+				return map.equals(other.map);
 			}
 		}
 	}
