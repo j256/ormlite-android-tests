@@ -29,6 +29,7 @@ import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.DatabaseFieldConfig;
 import com.j256.ormlite.stmt.DeleteBuilder;
+import com.j256.ormlite.stmt.PreparedQuery;
 import com.j256.ormlite.stmt.QueryBuilder;
 import com.j256.ormlite.stmt.SelectArg;
 import com.j256.ormlite.stmt.UpdateBuilder;
@@ -41,8 +42,6 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	private final boolean CLOSE_IS_NOOP = true;
 	private final boolean UPDATE_ROWS_RETURNS_ONE = true;
-
-	/* ============================================================================================================== */
 
 	private DatabaseType databaseType = new SqliteAndroidDatabaseType();
 	private ConnectionSource connectionSource;
@@ -68,7 +67,74 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		closeConnectionSource();
 	}
 
-	/* ============================================================================================================== */
+	protected void closeConnection() throws Exception {
+		if (connectionSource != null) {
+			for (DatabaseTableConfig<?> tableConfig : dropClassSet) {
+				dropTable(tableConfig, true);
+			}
+			connectionSource.close();
+			connectionSource = null;
+		}
+		databaseType = null;
+	}
+
+	private <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
+		return createDao(DatabaseTableConfig.fromClass(databaseType, clazz), createTable);
+	}
+
+	private <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
+		BaseDaoImpl<T, ID> dao = new BaseDaoImpl<T, ID>(connectionSource, tableConfig) {
+		};
+		return configDao(tableConfig, createTable, dao);
+	}
+
+	private <T> void createTable(DatabaseTableConfig<T> tableConfig, boolean dropAtEnd) throws Exception {
+		try {
+			// first we drop it in case it existed before
+			dropTable(tableConfig, true);
+		} catch (SQLException ignored) {
+			// ignore any errors about missing tables
+		}
+		TableUtils.createTable(connectionSource, tableConfig);
+		if (dropAtEnd) {
+			dropClassSet.add(tableConfig);
+		}
+	}
+
+	private <T> void dropTable(DatabaseTableConfig<T> tableConfig, boolean ignoreErrors) throws Exception {
+		// drop the table and ignore any errors along the way
+		TableUtils.dropTable(connectionSource, tableConfig, ignoreErrors);
+	}
+
+	private <T, ID> Dao<T, ID> configDao(DatabaseTableConfig<T> tableConfig, boolean createTable, BaseDaoImpl<T, ID> dao)
+			throws Exception {
+		if (connectionSource == null) {
+			throw new SQLException("no connection source configured");
+		}
+		dao.setConnectionSource(connectionSource);
+		if (createTable) {
+			createTable(tableConfig, true);
+		}
+		dao.initialize();
+		return dao;
+	}
+
+	private void closeConnectionSource() throws Exception {
+		if (connectionSource != null) {
+			for (DatabaseTableConfig<?> tableConfig : dropClassSet) {
+				dropTable(tableConfig, true);
+			}
+			connectionSource.close();
+			connectionSource = null;
+		}
+		databaseType = null;
+	}
+
+	/*
+	 * ==============================================================================================================
+	 * Insert the JdbcBaseDaoImplTest below
+	 * ==============================================================================================================
+	 */
 
 	private final static String DEFAULT_VALUE_STRING = "1314199";
 	private final static int DEFAULT_VALUE = Integer.parseInt(DEFAULT_VALUE_STRING);
@@ -731,9 +797,9 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	public void testFieldConfig() throws Exception {
 		List<DatabaseFieldConfig> fieldConfigs = new ArrayList<DatabaseFieldConfig>();
 		fieldConfigs.add(new DatabaseFieldConfig("id", "id2", DataType.UNKNOWN, null, 0, false, false, true, null,
-				false, null, false, null, false, null, false));
+				false, null, false, null, false, null, false, null));
 		fieldConfigs.add(new DatabaseFieldConfig("stuff", "stuffy", DataType.UNKNOWN, null, 0, false, false, false,
-				null, false, null, false, null, false, null, false));
+				null, false, null, false, null, false, null, false, null));
 		DatabaseTableConfig<NoAnno> tableConfig = new DatabaseTableConfig<NoAnno>(NoAnno.class, "noanno", fieldConfigs);
 		Dao<NoAnno, Integer> noAnnotaionDao = createDao(tableConfig, true);
 		NoAnno noa = new NoAnno();
@@ -748,9 +814,9 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	public void testFieldConfigForeign() throws Exception {
 		List<DatabaseFieldConfig> noAnnotationsFieldConfigs = new ArrayList<DatabaseFieldConfig>();
 		noAnnotationsFieldConfigs.add(new DatabaseFieldConfig("id", "idthingie", DataType.UNKNOWN, null, 0, false,
-				false, true, null, false, null, false, null, false, null, false));
+				false, true, null, false, null, false, null, false, null, false, null));
 		noAnnotationsFieldConfigs.add(new DatabaseFieldConfig("stuff", "stuffy", DataType.UNKNOWN, null, 0, false,
-				false, false, null, false, null, false, null, false, null, false));
+				false, false, null, false, null, false, null, false, null, false, null));
 		DatabaseTableConfig<NoAnno> noAnnotationsTableConfig =
 				new DatabaseTableConfig<NoAnno>(NoAnno.class, noAnnotationsFieldConfigs);
 		Dao<NoAnno, Integer> noAnnotaionDao = createDao(noAnnotationsTableConfig, true);
@@ -762,9 +828,10 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 		List<DatabaseFieldConfig> noAnnotationsForiegnFieldConfigs = new ArrayList<DatabaseFieldConfig>();
 		noAnnotationsForiegnFieldConfigs.add(new DatabaseFieldConfig("id", "anotherid", DataType.UNKNOWN, null, 0,
-				false, false, true, null, false, null, false, null, false, null, false));
+				false, false, true, null, false, null, false, null, false, null, false, null));
 		noAnnotationsForiegnFieldConfigs.add(new DatabaseFieldConfig("foreign", "foreignThingie", DataType.UNKNOWN,
-				null, 0, false, false, false, null, true, noAnnotationsTableConfig, false, null, false, null, false));
+				null, 0, false, false, false, null, true, noAnnotationsTableConfig, false, null, false, null, false,
+				null));
 		DatabaseTableConfig<NoAnnoFor> noAnnotationsForiegnTableConfig =
 				new DatabaseTableConfig<NoAnnoFor>(NoAnnoFor.class, noAnnotationsForiegnFieldConfigs);
 
@@ -1801,7 +1868,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		RawResults rawResults = fooDao.queryForAllRaw(sb.toString());
 		String[] cols = rawResults.getColumnNames();
 		assertEquals(1, cols.length);
-		assertEquals(colName, cols[0]);
+		assertTrue(colName.equalsIgnoreCase(cols[0]));
 		List<String[]> results = rawResults.getResults();
 		assertEquals(1, results.size());
 		String[] resultArray = results.get(0);
@@ -1844,14 +1911,68 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testRawBytes() throws Exception {
-		Dao<RawBytes, Integer> rawDao = createDao(RawBytes.class, true);
+		Dao<RawBytes, Integer> dao = createDao(RawBytes.class, true);
 		RawBytes raw1 = new RawBytes();
 		raw1.bytes = new byte[] { 1, 25, 3, 124, 10 };
-		assertEquals(1, rawDao.create(raw1));
-		RawBytes raw2 = rawDao.queryForId(raw1.id);
+		assertEquals(1, dao.create(raw1));
+		RawBytes raw2 = dao.queryForId(raw1.id);
 		assertNotNull(raw2);
 		assertEquals(raw1.id, raw2.id);
 		assertTrue(Arrays.equals(raw1.bytes, raw2.bytes));
+	}
+
+	public void testSuperClassAnnotations() throws Exception {
+		Dao<Sub, Integer> dao = createDao(Sub.class, true);
+		Sub sub1 = new Sub();
+		String stuff = "doepqjdpqdq";
+		sub1.stuff = stuff;
+		assertEquals(1, dao.create(sub1));
+		Sub sub2 = dao.queryForId(sub1.id);
+		assertNotNull(sub2);
+		assertEquals(sub1.id, sub2.id);
+		assertEquals(sub1.stuff, sub2.stuff);
+	}
+
+	public void testFieldIndex() throws Exception {
+		Dao<Index, Integer> dao = createDao(Index.class, true);
+		Index index1 = new Index();
+		String stuff = "doepqjdpqdq";
+		index1.stuff = stuff;
+		assertEquals(1, dao.create(index1));
+		Index index2 = dao.queryForId(index1.id);
+		assertNotNull(index2);
+		assertEquals(index1.id, index2.id);
+		assertEquals(index1.stuff, index2.stuff);
+
+		PreparedQuery<Index> query = dao.queryBuilder().where().eq("stuff", index1.stuff).prepare();
+		List<Index> results = dao.query(query);
+		assertNotNull(results);
+		assertEquals(1, results.size());
+		assertEquals(index1.id, results.get(0).id);
+		assertEquals(index1.stuff, results.get(0).stuff);
+	}
+
+	public void testComboFieldIndex() throws Exception {
+		Dao<ComboIndex, Integer> dao = createDao(ComboIndex.class, true);
+		ComboIndex index1 = new ComboIndex();
+		String stuff = "doepqjdpqdq";
+		long junk = 131234124213213L;
+		index1.stuff = stuff;
+		index1.junk = junk;
+		assertEquals(1, dao.create(index1));
+		ComboIndex index2 = dao.queryForId(index1.id);
+		assertNotNull(index2);
+		assertEquals(index1.id, index2.id);
+		assertEquals(index1.stuff, index2.stuff);
+		assertEquals(index1.junk, index2.junk);
+
+		PreparedQuery<ComboIndex> query = dao.queryBuilder().where().eq("stuff", index1.stuff).prepare();
+		List<ComboIndex> results = dao.query(query);
+		assertNotNull(results);
+		assertEquals(1, results.size());
+		assertEquals(index1.id, results.get(0).id);
+		assertEquals(index1.stuff, results.get(0).stuff);
+		assertEquals(index1.junk, results.get(0).junk);
 	}
 
 	/* ==================================================================================== */
@@ -1971,6 +2092,22 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		void setStuff(String stuff);
 		ID getId();
 		void setId(ID id);
+	}
+
+	private static class Mapper implements RawRowMapper<Foo> {
+		public Foo mapRow(String[] columnNames, String[] resultColumns) {
+			Foo foo = new Foo();
+			for (int i = 0; i < columnNames.length; i++) {
+				if (columnNames[i].equalsIgnoreCase(Foo.ID_FIELD_NAME)) {
+					foo.id = Integer.parseInt(resultColumns[i]);
+				} else if (columnNames[i].equalsIgnoreCase(Foo.STUFF_FIELD_NAME)) {
+					foo.stuff = resultColumns[i];
+				} else if (columnNames[i].equalsIgnoreCase(Foo.VAL_FIELD_NAME)) {
+					foo.val = Integer.parseInt(resultColumns[i]);
+				}
+			}
+			return foo;
+		}
 	}
 
 	/* ==================================================================================== */
@@ -2907,84 +3044,41 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
-	private static class Mapper implements RawRowMapper<Foo> {
-		public Foo mapRow(String[] columnNames, String[] resultColumns) {
-			Foo foo = new Foo();
-			for (int i = 0; i < columnNames.length; i++) {
-				if (columnNames[i].equalsIgnoreCase(Foo.ID_FIELD_NAME)) {
-					foo.id = Integer.parseInt(resultColumns[i]);
-				} else if (columnNames[i].equalsIgnoreCase(Foo.STUFF_FIELD_NAME)) {
-					foo.stuff = resultColumns[i];
-				} else if (columnNames[i].equalsIgnoreCase(Foo.VAL_FIELD_NAME)) {
-					foo.val = Integer.parseInt(resultColumns[i]);
-				}
-			}
-			return foo;
+	@DatabaseTable
+	protected static class Index {
+		@DatabaseField(generatedId = true)
+		int id;
+		@DatabaseField(index = true)
+		String stuff;
+		public Index() {
 		}
 	}
 
-	/* ============================================================================================================ */
-
-	protected void closeConnection() throws Exception {
-		if (connectionSource != null) {
-			for (DatabaseTableConfig<?> tableConfig : dropClassSet) {
-				dropTable(tableConfig, true);
-			}
-			connectionSource.close();
-			connectionSource = null;
-		}
-		databaseType = null;
-	}
-
-	private <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
-		return createDao(DatabaseTableConfig.fromClass(databaseType, clazz), createTable);
-	}
-
-	private <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
-		BaseDaoImpl<T, ID> dao = new BaseDaoImpl<T, ID>(connectionSource, tableConfig) {
-		};
-		return configDao(tableConfig, createTable, dao);
-	}
-
-	private <T> void createTable(DatabaseTableConfig<T> tableConfig, boolean dropAtEnd) throws Exception {
-		try {
-			// first we drop it in case it existed before
-			dropTable(tableConfig, true);
-		} catch (SQLException ignored) {
-			// ignore any errors about missing tables
-		}
-		TableUtils.createTable(connectionSource, tableConfig);
-		if (dropAtEnd) {
-			dropClassSet.add(tableConfig);
+	@DatabaseTable
+	protected static class ComboIndex {
+		@DatabaseField(generatedId = true)
+		int id;
+		@DatabaseField(indexName = "stuffjunk")
+		String stuff;
+		@DatabaseField(indexName = "stuffjunk")
+		long junk;
+		public ComboIndex() {
 		}
 	}
 
-	private <T> void dropTable(DatabaseTableConfig<T> tableConfig, boolean ignoreErrors) throws Exception {
-		// drop the table and ignore any errors along the way
-		TableUtils.dropTable(connectionSource, tableConfig, ignoreErrors);
+	protected static class Base {
+		@DatabaseField(id = true)
+		int id;
+		public Base() {
+			// for ormlite
+		}
 	}
 
-	private <T, ID> Dao<T, ID> configDao(DatabaseTableConfig<T> tableConfig, boolean createTable, BaseDaoImpl<T, ID> dao)
-			throws Exception {
-		if (connectionSource == null) {
-			throw new SQLException("no connection source configured");
+	protected static class Sub extends Base {
+		@DatabaseField
+		String stuff;
+		public Sub() {
+			// for ormlite
 		}
-		dao.setConnectionSource(connectionSource);
-		if (createTable) {
-			createTable(tableConfig, true);
-		}
-		dao.initialize();
-		return dao;
-	}
-
-	private void closeConnectionSource() throws Exception {
-		if (connectionSource != null) {
-			for (DatabaseTableConfig<?> tableConfig : dropClassSet) {
-				dropTable(tableConfig, true);
-			}
-			connectionSource.close();
-			connectionSource = null;
-		}
-		databaseType = null;
 	}
 }

@@ -19,8 +19,6 @@ import com.j256.ormlite.table.TableUtils;
 
 public class AndroidJdbcTransactionManagerTest extends AndroidTestCase {
 
-	/* ============================================================================================================== */
-
 	private DatabaseType databaseType = new SqliteAndroidDatabaseType();
 	private ConnectionSource connectionSource;
 	private OrmDatabaseHelper helper;
@@ -47,7 +45,52 @@ public class AndroidJdbcTransactionManagerTest extends AndroidTestCase {
 		}
 	}
 
-	/* ============================================================================================================== */
+	private <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
+		return createDao(DatabaseTableConfig.fromClass(databaseType, clazz), createTable);
+	}
+
+	private <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
+		BaseDaoImpl<T, ID> dao = new BaseDaoImpl<T, ID>(connectionSource, tableConfig) {
+		};
+		return configDao(tableConfig, createTable, dao);
+	}
+
+	private <T> void createTable(DatabaseTableConfig<T> tableConfig, boolean dropAtEnd) throws Exception {
+		try {
+			// first we drop it in case it existed before
+			dropTable(tableConfig, true);
+		} catch (SQLException ignored) {
+			// ignore any errors about missing tables
+		}
+		TableUtils.createTable(connectionSource, tableConfig);
+		if (dropAtEnd) {
+			dropClassSet.add(tableConfig);
+		}
+	}
+
+	private <T> void dropTable(DatabaseTableConfig<T> tableConfig, boolean ignoreErrors) throws Exception {
+		// drop the table and ignore any errors along the way
+		TableUtils.dropTable(connectionSource, tableConfig, ignoreErrors);
+	}
+
+	private <T, ID> Dao<T, ID> configDao(DatabaseTableConfig<T> tableConfig, boolean createTable, BaseDaoImpl<T, ID> dao)
+			throws Exception {
+		if (connectionSource == null) {
+			throw new SQLException("no connection source configured");
+		}
+		dao.setConnectionSource(connectionSource);
+		if (createTable) {
+			createTable(tableConfig, true);
+		}
+		dao.initialize();
+		return dao;
+	}
+
+	/*
+	 * ==============================================================================================================
+	 * Insert the JdbcTransactionManagerTest below
+	 * ==============================================================================================================
+	 */
 
 	public void testDaoTransactionManagerCommitted() throws Exception {
 		if (connectionSource == null) {
@@ -157,48 +200,5 @@ public class AndroidJdbcTransactionManagerTest extends AndroidTestCase {
 		Foo() {
 			// for ormlite
 		}
-	}
-
-	/* ============================================================================================================== */
-
-	private <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
-		return createDao(DatabaseTableConfig.fromClass(databaseType, clazz), createTable);
-	}
-
-	private <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
-		BaseDaoImpl<T, ID> dao = new BaseDaoImpl<T, ID>(connectionSource, tableConfig) {
-		};
-		return configDao(tableConfig, createTable, dao);
-	}
-
-	private <T> void createTable(DatabaseTableConfig<T> tableConfig, boolean dropAtEnd) throws Exception {
-		try {
-			// first we drop it in case it existed before
-			dropTable(tableConfig, true);
-		} catch (SQLException ignored) {
-			// ignore any errors about missing tables
-		}
-		TableUtils.createTable(connectionSource, tableConfig);
-		if (dropAtEnd) {
-			dropClassSet.add(tableConfig);
-		}
-	}
-
-	private <T> void dropTable(DatabaseTableConfig<T> tableConfig, boolean ignoreErrors) throws Exception {
-		// drop the table and ignore any errors along the way
-		TableUtils.dropTable(connectionSource, tableConfig, ignoreErrors);
-	}
-
-	private <T, ID> Dao<T, ID> configDao(DatabaseTableConfig<T> tableConfig, boolean createTable, BaseDaoImpl<T, ID> dao)
-			throws Exception {
-		if (connectionSource == null) {
-			throw new SQLException("no connection source configured");
-		}
-		dao.setConnectionSource(connectionSource);
-		if (createTable) {
-			createTable(tableConfig, true);
-		}
-		dao.initialize();
-		return dao;
 	}
 }

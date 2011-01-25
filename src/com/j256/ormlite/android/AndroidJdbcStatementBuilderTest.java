@@ -25,8 +25,6 @@ import com.j256.ormlite.table.TableUtils;
 
 public class AndroidJdbcStatementBuilderTest extends AndroidTestCase {
 
-	/* ============================================================================================================== */
-
 	private DatabaseType databaseType = new SqliteAndroidDatabaseType();
 	private ConnectionSource connectionSource;
 	private OrmDatabaseHelper helper;
@@ -53,7 +51,52 @@ public class AndroidJdbcStatementBuilderTest extends AndroidTestCase {
 		}
 	}
 
-	/* ============================================================================================================== */
+	private <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
+		return createDao(DatabaseTableConfig.fromClass(databaseType, clazz), createTable);
+	}
+
+	private <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
+		BaseDaoImpl<T, ID> dao = new BaseDaoImpl<T, ID>(connectionSource, tableConfig) {
+		};
+		return configDao(tableConfig, createTable, dao);
+	}
+
+	private <T> void createTable(DatabaseTableConfig<T> tableConfig, boolean dropAtEnd) throws Exception {
+		try {
+			// first we drop it in case it existed before
+			dropTable(tableConfig, true);
+		} catch (SQLException ignored) {
+			// ignore any errors about missing tables
+		}
+		TableUtils.createTable(connectionSource, tableConfig);
+		if (dropAtEnd) {
+			dropClassSet.add(tableConfig);
+		}
+	}
+
+	private <T> void dropTable(DatabaseTableConfig<T> tableConfig, boolean ignoreErrors) throws Exception {
+		// drop the table and ignore any errors along the way
+		TableUtils.dropTable(connectionSource, tableConfig, ignoreErrors);
+	}
+
+	private <T, ID> Dao<T, ID> configDao(DatabaseTableConfig<T> tableConfig, boolean createTable, BaseDaoImpl<T, ID> dao)
+			throws Exception {
+		if (connectionSource == null) {
+			throw new SQLException("no connection source configured");
+		}
+		dao.setConnectionSource(connectionSource);
+		if (createTable) {
+			createTable(tableConfig, true);
+		}
+		dao.initialize();
+		return dao;
+	}
+
+	/*
+	 * ==============================================================================================================
+	 * Insert the JdbcStatementBuilderTest.java below
+	 * ==============================================================================================================
+	 */
 
 	private final static String ID_PREFIX = "id";
 	private final static int LOW_VAL = 21114;
@@ -73,7 +116,7 @@ public class AndroidJdbcStatementBuilderTest extends AndroidTestCase {
 		assertEquals(foo1, results.get(0));
 
 		// test And + Eq not inline
-		Where where = qb.where();
+		Where<Foo, String> where = qb.where();
 		where.eq(Foo.ID_COLUMN_NAME, foo2.id);
 		where.and();
 		where.eq(Foo.VAL_COLUMN_NAME, foo2.val);
@@ -100,7 +143,7 @@ public class AndroidJdbcStatementBuilderTest extends AndroidTestCase {
 		assertEquals(foo1, results.get(0));
 
 		// test Or + Eq not inline
-		Where where = qb.where();
+		Where<Foo, String> where = qb.where();
 		where.eq(Foo.ID_COLUMN_NAME, foo2.id);
 		where.or();
 		where.eq(Foo.VAL_COLUMN_NAME, foo2.val);
@@ -220,7 +263,7 @@ public class AndroidJdbcStatementBuilderTest extends AndroidTestCase {
 	public void testNotNotComparison() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
 		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
-		Where where = qb.where();
+		Where<Foo, String> where = qb.where();
 		try {
 			where.not(where.and(where.eq(Foo.ID_COLUMN_NAME, foo1.id), where.eq(Foo.ID_COLUMN_NAME, foo1.id)));
 			fail("expected exception");
@@ -232,7 +275,7 @@ public class AndroidJdbcStatementBuilderTest extends AndroidTestCase {
 	public void testNotArg() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
 		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
-		Where where = qb.where();
+		Where<Foo, String> where = qb.where();
 		where.not(where.eq(Foo.ID_COLUMN_NAME, foo1.id));
 		List<Foo> results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
@@ -681,7 +724,7 @@ public class AndroidJdbcStatementBuilderTest extends AndroidTestCase {
 	public void testSetWhere() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
 		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
-		Where where = qb.where();
+		Where<Foo, String> where = qb.where();
 		where.eq(Foo.ID_COLUMN_NAME, foo1.id);
 		List<Foo> list = fooDao.query(qb.prepare());
 		assertEquals(1, list.size());
@@ -697,7 +740,7 @@ public class AndroidJdbcStatementBuilderTest extends AndroidTestCase {
 	public void testQueryForStringInt() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
 		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
-		Where where = qb.where();
+		Where<Foo, String> where = qb.where();
 		// testing the val column with a integer as a string
 		where.eq(Foo.VAL_COLUMN_NAME, Integer.toString(foo1.val));
 		List<Foo> list = fooDao.query(qb.prepare());
@@ -814,48 +857,5 @@ public class AndroidJdbcStatementBuilderTest extends AndroidTestCase {
 		public String first;
 		@DatabaseField(columnName = LAST_FIELD_NAME)
 		public String last;
-	}
-
-	/* ============================================================================================================== */
-
-	private <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
-		return createDao(DatabaseTableConfig.fromClass(databaseType, clazz), createTable);
-	}
-
-	private <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
-		BaseDaoImpl<T, ID> dao = new BaseDaoImpl<T, ID>(connectionSource, tableConfig) {
-		};
-		return configDao(tableConfig, createTable, dao);
-	}
-
-	private <T> void createTable(DatabaseTableConfig<T> tableConfig, boolean dropAtEnd) throws Exception {
-		try {
-			// first we drop it in case it existed before
-			dropTable(tableConfig, true);
-		} catch (SQLException ignored) {
-			// ignore any errors about missing tables
-		}
-		TableUtils.createTable(connectionSource, tableConfig);
-		if (dropAtEnd) {
-			dropClassSet.add(tableConfig);
-		}
-	}
-
-	private <T> void dropTable(DatabaseTableConfig<T> tableConfig, boolean ignoreErrors) throws Exception {
-		// drop the table and ignore any errors along the way
-		TableUtils.dropTable(connectionSource, tableConfig, ignoreErrors);
-	}
-
-	private <T, ID> Dao<T, ID> configDao(DatabaseTableConfig<T> tableConfig, boolean createTable, BaseDaoImpl<T, ID> dao)
-			throws Exception {
-		if (connectionSource == null) {
-			throw new SQLException("no connection source configured");
-		}
-		dao.setConnectionSource(connectionSource);
-		if (createTable) {
-			createTable(tableConfig, true);
-		}
-		dao.initialize();
-		return dao;
 	}
 }
