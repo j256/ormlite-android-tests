@@ -797,9 +797,9 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	public void testFieldConfig() throws Exception {
 		List<DatabaseFieldConfig> fieldConfigs = new ArrayList<DatabaseFieldConfig>();
 		fieldConfigs.add(new DatabaseFieldConfig("id", "id2", DataType.UNKNOWN, null, 0, false, false, true, null,
-				false, null, false, null, false, null, false, null));
+				false, null, false, null, false, null, false, null, null));
 		fieldConfigs.add(new DatabaseFieldConfig("stuff", "stuffy", DataType.UNKNOWN, null, 0, false, false, false,
-				null, false, null, false, null, false, null, false, null));
+				null, false, null, false, null, false, null, false, null, null));
 		DatabaseTableConfig<NoAnno> tableConfig = new DatabaseTableConfig<NoAnno>(NoAnno.class, "noanno", fieldConfigs);
 		Dao<NoAnno, Integer> noAnnotaionDao = createDao(tableConfig, true);
 		NoAnno noa = new NoAnno();
@@ -814,9 +814,9 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	public void testFieldConfigForeign() throws Exception {
 		List<DatabaseFieldConfig> noAnnotationsFieldConfigs = new ArrayList<DatabaseFieldConfig>();
 		noAnnotationsFieldConfigs.add(new DatabaseFieldConfig("id", "idthingie", DataType.UNKNOWN, null, 0, false,
-				false, true, null, false, null, false, null, false, null, false, null));
+				false, true, null, false, null, false, null, false, null, false, null, null));
 		noAnnotationsFieldConfigs.add(new DatabaseFieldConfig("stuff", "stuffy", DataType.UNKNOWN, null, 0, false,
-				false, false, null, false, null, false, null, false, null, false, null));
+				false, false, null, false, null, false, null, false, null, false, null, null));
 		DatabaseTableConfig<NoAnno> noAnnotationsTableConfig =
 				new DatabaseTableConfig<NoAnno>(NoAnno.class, noAnnotationsFieldConfigs);
 		Dao<NoAnno, Integer> noAnnotaionDao = createDao(noAnnotationsTableConfig, true);
@@ -828,10 +828,10 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 		List<DatabaseFieldConfig> noAnnotationsForiegnFieldConfigs = new ArrayList<DatabaseFieldConfig>();
 		noAnnotationsForiegnFieldConfigs.add(new DatabaseFieldConfig("id", "anotherid", DataType.UNKNOWN, null, 0,
-				false, false, true, null, false, null, false, null, false, null, false, null));
+				false, false, true, null, false, null, false, null, false, null, false, null, null));
 		noAnnotationsForiegnFieldConfigs.add(new DatabaseFieldConfig("foreign", "foreignThingie", DataType.UNKNOWN,
 				null, 0, false, false, false, null, true, noAnnotationsTableConfig, false, null, false, null, false,
-				null));
+				null, null));
 		DatabaseTableConfig<NoAnnoFor> noAnnotationsForiegnTableConfig =
 				new DatabaseTableConfig<NoAnnoFor>(NoAnnoFor.class, noAnnotationsForiegnFieldConfigs);
 
