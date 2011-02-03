@@ -21,6 +21,7 @@ import android.test.AndroidTestCase;
 import com.j256.ormlite.dao.BaseDaoImpl;
 import com.j256.ormlite.dao.CloseableIterator;
 import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.GenericRawResults;
 import com.j256.ormlite.dao.RawResults;
 import com.j256.ormlite.dao.RawRowMapper;
 import com.j256.ormlite.db.DatabaseType;
@@ -38,6 +39,7 @@ import com.j256.ormlite.table.DatabaseTable;
 import com.j256.ormlite.table.DatabaseTableConfig;
 import com.j256.ormlite.table.TableUtils;
 
+@SuppressWarnings("deprecation")
 public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	private final boolean CLOSE_IS_NOOP = true;
@@ -54,17 +56,15 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		super.setUp();
 		helper = new OrmDatabaseHelper(getContext());
 		connectionSource = helper.getConnectionSource();
-		fooDao = createDao(Foo.class, true);
 	}
 
 	@Override
 	protected void tearDown() throws Exception {
 		super.tearDown();
+		closeConnectionSource();
 		if (helper != null) {
 			helper.close();
-			helper = null;
 		}
-		closeConnectionSource();
 	}
 
 	protected void closeConnection() throws Exception {
@@ -79,13 +79,18 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	private <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
-		return createDao(DatabaseTableConfig.fromClass(databaseType, clazz), createTable);
+		return createDao(DatabaseTableConfig.fromClass(connectionSource, clazz), createTable);
 	}
 
 	private <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
 		BaseDaoImpl<T, ID> dao = new BaseDaoImpl<T, ID>(connectionSource, tableConfig) {
 		};
 		return configDao(tableConfig, createTable, dao);
+	}
+
+	private <T> void createTable(Class<T> clazz, boolean dropAtEnd) throws Exception {
+		DatabaseTableConfig<T> tableConfig = DatabaseTableConfig.fromClass(connectionSource, clazz);
+		createTable(tableConfig, dropAtEnd);
 	}
 
 	private <T> void createTable(DatabaseTableConfig<T> tableConfig, boolean dropAtEnd) throws Exception {
@@ -163,10 +168,8 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	private final static String DEFAULT_ENUM_VALUE = "FIRST";
 	private final static String DEFAULT_ENUM_NUMBER_VALUE = "1";
 
-	// needs to be protected for test base classes
-	protected Dao<Foo, Integer> fooDao;
-
 	public void testCreateDaoStatic() throws Exception {
+		createTable(Foo.class, true);
 		Dao<Foo, Integer> fooDao = BaseDaoImpl.createDao(connectionSource, Foo.class);
 		String stuff = "stuff";
 		Foo foo = new Foo();
@@ -181,6 +184,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testCreateUpdateDelete() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		String s1 = "stuff";
 		Foo foo1 = new Foo();
 		foo1.stuff = s1;
@@ -220,12 +224,13 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		try {
 			doubleDao.create(foo);
 			fail("expected exception");
-		} catch (Exception e) {
+		} catch (SQLException e) {
 			// expected
 		}
 	}
 
 	public void testIterateRemove() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		List<Foo> acctList = fooDao.queryForAll();
 		int initialSize = acctList.size();
 
@@ -270,6 +275,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testGeneratedField() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		Foo foo1 = new Foo();
 		foo1.stuff = "s1";
 		assertEquals(0, foo1.id);
@@ -278,6 +284,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testGeneratedIdNotNullField() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		Foo foo1 = new Foo();
 		foo1.stuff = "s1";
 		assertEquals(0, foo1.id);
@@ -286,6 +293,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testObjectToString() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		String stuff = "foo123231";
 		Foo foo1 = new Foo();
 		foo1.stuff = stuff;
@@ -295,22 +303,27 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testCreateNull() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		assertEquals(0, fooDao.create(null));
 	}
 
 	public void testUpdateNull() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		assertEquals(0, fooDao.update((Foo) null));
 	}
 
 	public void testUpdateIdNull() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		assertEquals(0, fooDao.updateId(null, null));
 	}
 
 	public void testDeleteNull() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		assertEquals(0, fooDao.delete((Foo) null));
 	}
 
 	public void testCloseInIterator() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		Foo foo1 = new Foo();
 		foo1.stuff = "s1";
 		fooDao.create(foo1);
@@ -329,6 +342,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testCloseIteratorFirst() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		Foo foo1 = new Foo();
 		foo1.stuff = "s1";
 		fooDao.create(foo1);
@@ -342,6 +356,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testCloseIteratorBeforeNext() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		Foo foo1 = new Foo();
 		foo1.stuff = "s1";
 		fooDao.create(foo1);
@@ -360,6 +375,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testCloseIteratorBeforeRemove() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		Foo foo1 = new Foo();
 		foo1.stuff = "s1";
 		fooDao.create(foo1);
@@ -377,6 +393,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testNoNextBeforeRemove() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		Foo foo1 = new Foo();
 		foo1.stuff = "s1";
 		fooDao.create(foo1);
@@ -390,6 +407,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testIteratePageSize() throws Exception {
+		final Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		// do a mass insert of 1000 items
 		fooDao.callBatchTasks(new Callable<Void>() {
 			public Void call() throws Exception {
@@ -409,7 +427,38 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
+	public void testIteratorPreparedQuery() throws Exception {
+		final Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
+		// do an insert of 100 items
+		final int numItems = 100;
+		fooDao.callBatchTasks(new Callable<Void>() {
+			public Void call() throws Exception {
+				for (int i = 0; i < numItems; i++) {
+					Foo foo = new Foo();
+					foo.val = i;
+					assertEquals(1, fooDao.create(foo));
+				}
+				return null;
+			}
+		});
+
+		int lastX = 10;
+		PreparedQuery<Foo> preparedQuery =
+				fooDao.queryBuilder().where().ge(Foo.VAL_FIELD_NAME, numItems - lastX).prepare();
+
+		// now delete them with the iterator to test page-size
+		Iterator<Foo> iterator = fooDao.iterator(preparedQuery);
+		int itemC = 0;
+		while (iterator.hasNext()) {
+			Foo foo = iterator.next();
+			System.out.println("Foo = " + foo.val);
+			itemC++;
+		}
+		assertEquals(lastX, itemC);
+	}
+
 	public void testDeleteObjects() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		List<Foo> fooList = new ArrayList<Foo>();
 		for (int i = 0; i < 100; i++) {
 			Foo foo = new Foo();
@@ -428,12 +477,14 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testDeleteObjectsNone() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		List<Foo> fooList = new ArrayList<Foo>();
 		assertEquals(fooList.size(), fooDao.delete(fooList));
 		assertEquals(0, fooDao.queryForAll().size());
 	}
 
 	public void testDeleteIds() throws Exception {
+		final Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		final List<Integer> fooIdList = new ArrayList<Integer>();
 		fooDao.callBatchTasks(new Callable<Void>() {
 			public Void call() throws Exception {
@@ -456,12 +507,14 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testDeleteIdsNone() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		List<Integer> fooIdList = new ArrayList<Integer>();
 		assertEquals(fooIdList.size(), fooDao.deleteIds(fooIdList));
 		assertEquals(0, fooDao.queryForAll().size());
 	}
 
 	public void testDeletePreparedStmtIn() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		List<Integer> fooIdList = new ArrayList<Integer>();
 		for (int i = 0; i < 100; i++) {
 			Foo foo = new Foo();
@@ -482,6 +535,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testDeleteAllPreparedStmt() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		int fooN = 100;
 		for (int i = 0; i < fooN; i++) {
 			Foo foo = new Foo();
@@ -500,6 +554,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testHasNextAfterDone() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		Iterator<Foo> iterator = fooDao.iterator();
 		while (iterator.hasNext()) {
 		}
@@ -507,6 +562,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testNextWithoutHasNext() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		Iterator<Foo> iterator = fooDao.iterator();
 		try {
 			iterator.next();
@@ -517,6 +573,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testRemoveAfterDone() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		Iterator<Foo> iterator = fooDao.iterator();
 		assertFalse(iterator.hasNext());
 		try {
@@ -528,6 +585,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testIteratorNoResults() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		Iterator<Foo> iterator = fooDao.iterator();
 		assertFalse(iterator.hasNext());
 		assertNull(iterator.next());
@@ -578,6 +636,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testJustIdRefresh() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		String stuff1 = "just-id-refresh-1";
 		Foo foo1 = new Foo();
 		foo1.stuff = stuff1;
@@ -603,6 +662,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testSpringConstruction() throws Exception {
+		createTable(Foo.class, true);
 		BaseDaoImpl<Foo, Integer> fooDao = new BaseDaoImpl<Foo, Integer>(Foo.class) {
 		};
 		try {
@@ -750,6 +810,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testRefreshNull() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		// this should be a noop
 		assertEquals(0, fooDao.refresh(null));
 	}
@@ -797,9 +858,9 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	public void testFieldConfig() throws Exception {
 		List<DatabaseFieldConfig> fieldConfigs = new ArrayList<DatabaseFieldConfig>();
 		fieldConfigs.add(new DatabaseFieldConfig("id", "id2", DataType.UNKNOWN, null, 0, false, false, true, null,
-				false, null, false, null, false, null, false, null, null));
+				false, null, false, null, false, null, false, null, null, false));
 		fieldConfigs.add(new DatabaseFieldConfig("stuff", "stuffy", DataType.UNKNOWN, null, 0, false, false, false,
-				null, false, null, false, null, false, null, false, null, null));
+				null, false, null, false, null, false, null, false, null, null, false));
 		DatabaseTableConfig<NoAnno> tableConfig = new DatabaseTableConfig<NoAnno>(NoAnno.class, "noanno", fieldConfigs);
 		Dao<NoAnno, Integer> noAnnotaionDao = createDao(tableConfig, true);
 		NoAnno noa = new NoAnno();
@@ -814,9 +875,9 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	public void testFieldConfigForeign() throws Exception {
 		List<DatabaseFieldConfig> noAnnotationsFieldConfigs = new ArrayList<DatabaseFieldConfig>();
 		noAnnotationsFieldConfigs.add(new DatabaseFieldConfig("id", "idthingie", DataType.UNKNOWN, null, 0, false,
-				false, true, null, false, null, false, null, false, null, false, null, null));
+				false, true, null, false, null, false, null, false, null, false, null, null, false));
 		noAnnotationsFieldConfigs.add(new DatabaseFieldConfig("stuff", "stuffy", DataType.UNKNOWN, null, 0, false,
-				false, false, null, false, null, false, null, false, null, false, null, null));
+				false, false, null, false, null, false, null, false, null, false, null, null, false));
 		DatabaseTableConfig<NoAnno> noAnnotationsTableConfig =
 				new DatabaseTableConfig<NoAnno>(NoAnno.class, noAnnotationsFieldConfigs);
 		Dao<NoAnno, Integer> noAnnotaionDao = createDao(noAnnotationsTableConfig, true);
@@ -828,10 +889,10 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 		List<DatabaseFieldConfig> noAnnotationsForiegnFieldConfigs = new ArrayList<DatabaseFieldConfig>();
 		noAnnotationsForiegnFieldConfigs.add(new DatabaseFieldConfig("id", "anotherid", DataType.UNKNOWN, null, 0,
-				false, false, true, null, false, null, false, null, false, null, false, null, null));
+				false, false, true, null, false, null, false, null, false, null, false, null, null, false));
 		noAnnotationsForiegnFieldConfigs.add(new DatabaseFieldConfig("foreign", "foreignThingie", DataType.UNKNOWN,
 				null, 0, false, false, false, null, true, noAnnotationsTableConfig, false, null, false, null, false,
-				null, null));
+				null, null, false));
 		DatabaseTableConfig<NoAnnoFor> noAnnotationsForiegnTableConfig =
 				new DatabaseTableConfig<NoAnnoFor>(NoAnnoFor.class, noAnnotationsForiegnFieldConfigs);
 
@@ -896,7 +957,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		try {
 			fooDao.create(foo1);
 			fail("expected exception");
-		} catch (Exception e) {
+		} catch (SQLException e) {
 			// expected
 		}
 	}
@@ -917,7 +978,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		try {
 			defValDao.create(notNull);
 			fail("expected exception");
-		} catch (Exception e) {
+		} catch (SQLException e) {
 			// expected
 		}
 	}
@@ -1374,7 +1435,180 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
-	public void testQueryRaw() throws Exception {
+	public void testQueryRawStrings() throws Exception {
+		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
+		Foo foo = new Foo();
+		String stuff = "eprjpejrre";
+		foo.stuff = stuff;
+
+		GenericRawResults<String[]> results = fooDao.queryRaw("select * from " + FOO_TABLE_NAME);
+		assertEquals(0, results.getResults().size());
+		assertEquals(1, fooDao.create(foo));
+
+		results = fooDao.queryRaw("select * from " + FOO_TABLE_NAME);
+		int colN = results.getNumberColumns();
+		String[] colNames = results.getColumnNames();
+		assertEquals(3, colNames.length);
+		boolean gotId = false;
+		boolean gotStuff = false;
+		boolean gotVal = false;
+		// all this crap is here because of android column order
+		for (int colC = 0; colC < 3; colC++) {
+			if (colNames[colC].equalsIgnoreCase(Foo.ID_FIELD_NAME)) {
+				gotId = true;
+			} else if (colNames[colC].equalsIgnoreCase(Foo.STUFF_FIELD_NAME)) {
+				gotStuff = true;
+			} else if (colNames[colC].equalsIgnoreCase(Foo.VAL_FIELD_NAME)) {
+				gotVal = true;
+			}
+		}
+		assertTrue(gotId);
+		assertTrue(gotStuff);
+		assertTrue(gotVal);
+		List<String[]> resultList = results.getResults();
+		assertEquals(1, resultList.size());
+		String[] result = resultList.get(0);
+		assertEquals(colN, result.length);
+		for (int colC = 0; colC < results.getNumberColumns(); colC++) {
+			if (results.getColumnNames()[colC] == "id") {
+				assertEquals(Integer.toString(foo.id), result[colC]);
+			}
+			if (results.getColumnNames()[colC] == "stuff") {
+				assertEquals(stuff, result[1]);
+			}
+		}
+	}
+
+	public void testQueryRawStringsIterator() throws Exception {
+		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
+		Foo foo = new Foo();
+		String stuff = "eprjpejrre";
+		int val = 12321411;
+		foo.stuff = stuff;
+		foo.val = val;
+
+		GenericRawResults<String[]> results = fooDao.queryRaw("select * from " + FOO_TABLE_NAME);
+		CloseableIterator<String[]> iterator = results.iterator();
+		try {
+			assertFalse(iterator.hasNext());
+		} finally {
+			iterator.close();
+		}
+		assertEquals(1, fooDao.create(foo));
+
+		results = fooDao.queryRaw("select * from " + FOO_TABLE_NAME);
+		int colN = results.getNumberColumns();
+		String[] colNames = results.getColumnNames();
+		assertEquals(3, colNames.length);
+		iterator = results.iterator();
+		try {
+			assertTrue(iterator.hasNext());
+			String[] result = iterator.next();
+			assertEquals(colN, result.length);
+			boolean foundId = false;
+			boolean foundStuff = false;
+			boolean foundVal = false;
+			for (int colC = 0; colC < results.getNumberColumns(); colC++) {
+				if (results.getColumnNames()[colC].equalsIgnoreCase(Foo.ID_FIELD_NAME)) {
+					assertEquals(Integer.toString(foo.id), result[colC]);
+					foundId = true;
+				}
+				if (results.getColumnNames()[colC].equalsIgnoreCase(Foo.STUFF_FIELD_NAME)) {
+					assertEquals(stuff, result[colC]);
+					foundStuff = true;
+				}
+				if (results.getColumnNames()[colC].equalsIgnoreCase(Foo.VAL_FIELD_NAME)) {
+					assertEquals(Integer.toString(val), result[colC]);
+					foundVal = true;
+				}
+			}
+			assertTrue(foundId);
+			assertTrue(foundStuff);
+			assertTrue(foundVal);
+			assertFalse(iterator.hasNext());
+		} finally {
+			iterator.close();
+		}
+	}
+
+	public void testQueryRawMappedIterator() throws Exception {
+		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
+		final Foo foo = new Foo();
+		String stuff = "eprjpejrre";
+		foo.stuff = stuff;
+
+		Mapper mapper = new Mapper();
+		GenericRawResults<Foo> rawResults = fooDao.queryRaw("select * from " + FOO_TABLE_NAME, mapper);
+		assertEquals(0, rawResults.getResults().size());
+		assertEquals(1, fooDao.create(foo));
+		rawResults = fooDao.queryRaw("select * from " + FOO_TABLE_NAME, mapper);
+		Iterator<Foo> iterator = rawResults.iterator();
+		assertTrue(iterator.hasNext());
+		Foo foo2 = iterator.next();
+		assertEquals(foo.id, foo2.id);
+		assertEquals(foo.stuff, foo2.stuff);
+		assertEquals(foo.val, foo2.val);
+		assertFalse(iterator.hasNext());
+	}
+
+	public void testQueryRawObjectsIterator() throws Exception {
+		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
+		Foo foo = new Foo();
+		String stuff = "eprjpejrre";
+		int val = 213123;
+		foo.stuff = stuff;
+		foo.val = val;
+
+		GenericRawResults<Object[]> results =
+				fooDao.queryRaw("select * from " + FOO_TABLE_NAME, new DataType[] { DataType.INTEGER, DataType.STRING,
+						DataType.INTEGER });
+		CloseableIterator<Object[]> iterator = results.iterator();
+		try {
+			assertFalse(iterator.hasNext());
+		} finally {
+			iterator.close();
+		}
+		assertEquals(1, fooDao.create(foo));
+
+		results =
+				fooDao.queryRaw("select * from " + FOO_TABLE_NAME, new DataType[] { DataType.INTEGER, DataType.STRING,
+						DataType.INTEGER });
+		int colN = results.getNumberColumns();
+		String[] colNames = results.getColumnNames();
+		assertEquals(3, colNames.length);
+		iterator = results.iterator();
+		try {
+			assertTrue(iterator.hasNext());
+			Object[] result = iterator.next();
+			assertEquals(colN, result.length);
+			String[] columnNames = results.getColumnNames();
+			boolean foundId = false;
+			boolean foundStuff = false;
+			boolean foundVal = false;
+			for (int colC = 0; colC < results.getNumberColumns(); colC++) {
+				if (columnNames[colC].equalsIgnoreCase(Foo.ID_FIELD_NAME)) {
+					assertEquals(foo.id, result[colC]);
+					foundId = true;
+				}
+				if (columnNames[colC].equalsIgnoreCase(Foo.STUFF_FIELD_NAME)) {
+					assertEquals(stuff, result[colC]);
+					foundStuff = true;
+				}
+				if (columnNames[colC].equalsIgnoreCase(Foo.VAL_FIELD_NAME)) {
+					assertEquals(val, result[colC]);
+					foundVal = true;
+				}
+			}
+			assertTrue(foundId);
+			assertTrue(foundStuff);
+			assertTrue(foundVal);
+			assertFalse(iterator.hasNext());
+		} finally {
+			iterator.close();
+		}
+	}
+
+	public void testRawResults() throws Exception {
 		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
 		Foo foo = new Foo();
 		String stuff = "eprjpejrre";
@@ -1394,13 +1628,10 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		// all this crap is here because of android column order
 		for (int colC = 0; colC < 3; colC++) {
 			if (colNames[colC].equalsIgnoreCase(Foo.ID_FIELD_NAME)) {
-				assertFalse(gotId);
 				gotId = true;
 			} else if (colNames[colC].equalsIgnoreCase(Foo.STUFF_FIELD_NAME)) {
-				assertFalse(gotStuff);
 				gotStuff = true;
 			} else if (colNames[colC].equalsIgnoreCase(Foo.VAL_FIELD_NAME)) {
-				assertFalse(gotVal);
 				gotVal = true;
 			}
 		}
@@ -1408,20 +1639,24 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertTrue(gotStuff);
 		assertTrue(gotVal);
 		List<String[]> resultList = results.getResults();
-		assertEquals(1, results.getResults().size());
+		assertEquals(1, resultList.size());
 		String[] result = resultList.get(0);
 		assertEquals(colN, result.length);
+		String[] columnNames = results.getColumnNames();
 		for (int colC = 0; colC < results.getNumberColumns(); colC++) {
-			if (results.getColumnNames()[colC] == "id") {
+			if (columnNames[colC].equalsIgnoreCase(Foo.ID_FIELD_NAME)) {
 				assertEquals(Integer.toString(foo.id), result[colC]);
-			}
-			if (results.getColumnNames()[colC] == "stuff") {
-				assertEquals(stuff, result[1]);
+			} else if (columnNames[colC].equalsIgnoreCase(Foo.STUFF_FIELD_NAME)) {
+				assertEquals(stuff, result[colC]);
+			} else if (columnNames[colC].equalsIgnoreCase(Foo.VAL_FIELD_NAME)) {
+				assertEquals(Integer.toString(foo.val), result[colC]);
+			} else {
+				fail("Unknown column: " + columnNames[colC]);
 			}
 		}
 	}
 
-	public void testQueryRawIterator() throws Exception {
+	public void testRawResultsIterator() throws Exception {
 		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
 		Foo foo = new Foo();
 		String stuff = "eprjpejrre";
@@ -1459,7 +1694,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
-	public void testQueryRawMapped() throws Exception {
+	public void testRawResultsMappedList() throws Exception {
 		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
 		final Foo foo = new Foo();
 		String stuff = "eprjpejrre";
@@ -1477,7 +1712,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(foo.val, foo2.val);
 	}
 
-	public void testIteratorRawMapped() throws Exception {
+	public void testRawResultsMappedIterator() throws Exception {
 		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
 		final Foo foo = new Foo();
 		String stuff = "eprjpejrre";
@@ -1573,7 +1808,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		try {
 			dao.create(unique);
 			fail("Should have thrown");
-		} catch (Exception e) {
+		} catch (SQLException e) {
 			// expected
 			return;
 		}
@@ -1636,6 +1871,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testPrepareStatementUpdateValueString() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		Foo foo = new Foo();
 		String stuff = "dqedqdq";
 		foo.stuff = stuff;
@@ -1656,6 +1892,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testPrepareStatementUpdateValueNumber() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		Foo foo = new Foo();
 		foo.val = 123213;
 		assertEquals(1, fooDao.create(foo));
@@ -1675,6 +1912,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testPrepareStatementUpdateValueExpression() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		Foo foo = new Foo();
 		foo.val = 123213;
 		assertEquals(1, fooDao.create(foo));
@@ -1700,6 +1938,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testPrepareStatementUpdateValueWhere() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		Foo foo1 = new Foo();
 		foo1.val = 78582351;
 		assertEquals(1, fooDao.create(foo1));
@@ -1850,32 +2089,6 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
-	public void testQueryForAllRaw() throws Exception {
-		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
-		int valSum = 0;
-		for (int i = 0; i < 20; i++) {
-			Foo foo = new Foo();
-			foo.val = i;
-			assertEquals(1, fooDao.create(foo));
-			valSum += foo.val;
-		}
-		String colName = "XYZ";
-		StringBuilder sb = new StringBuilder();
-		sb.append("select sum(");
-		databaseType.appendEscapedEntityName(sb, Foo.VAL_FIELD_NAME);
-		sb.append(") as ").append(colName);
-		sb.append(" from ").append(FOO_TABLE_NAME);
-		RawResults rawResults = fooDao.queryForAllRaw(sb.toString());
-		String[] cols = rawResults.getColumnNames();
-		assertEquals(1, cols.length);
-		assertTrue(colName.equalsIgnoreCase(cols[0]));
-		List<String[]> results = rawResults.getResults();
-		assertEquals(1, results.size());
-		String[] resultArray = results.get(0);
-		assertEquals(1, resultArray.length);
-		assertEquals(Integer.toString(valSum), resultArray[0]);
-	}
-
 	public void testInteratorForAllRaw() throws Exception {
 		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		int valSum = 0;
@@ -1942,37 +2155,135 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		Index index2 = dao.queryForId(index1.id);
 		assertNotNull(index2);
 		assertEquals(index1.id, index2.id);
-		assertEquals(index1.stuff, index2.stuff);
+		assertEquals(stuff, index2.stuff);
+		// this should work
+		assertEquals(1, dao.create(index1));
 
 		PreparedQuery<Index> query = dao.queryBuilder().where().eq("stuff", index1.stuff).prepare();
 		List<Index> results = dao.query(query);
 		assertNotNull(results);
+		assertEquals(2, results.size());
+		assertEquals(stuff, results.get(0).stuff);
+		assertEquals(stuff, results.get(1).stuff);
+	}
+
+	public void testFieldIndexColumnName() throws Exception {
+		Dao<IndexColumnName, Integer> dao = createDao(IndexColumnName.class, true);
+		IndexColumnName index1 = new IndexColumnName();
+		String stuff = "doepqjdpqdq";
+		index1.stuff = stuff;
+		assertEquals(1, dao.create(index1));
+		IndexColumnName index2 = dao.queryForId(index1.id);
+		assertNotNull(index2);
+		assertEquals(index1.id, index2.id);
+		assertEquals(stuff, index2.stuff);
+		// this should work
+		assertEquals(1, dao.create(index1));
+
+		PreparedQuery<IndexColumnName> query =
+				dao.queryBuilder().where().eq(IndexColumnName.STUFF_COLUMN_NAME, index1.stuff).prepare();
+		List<IndexColumnName> results = dao.query(query);
+		assertNotNull(results);
+		assertEquals(2, results.size());
+		assertEquals(stuff, results.get(0).stuff);
+		assertEquals(stuff, results.get(1).stuff);
+	}
+
+	public void testFieldUniqueIndex() throws Exception {
+		Dao<UniqueIndex, Integer> dao = createDao(UniqueIndex.class, true);
+		UniqueIndex index1 = new UniqueIndex();
+		String stuff1 = "doepqjdpqdq";
+		index1.stuff = stuff1;
+		assertEquals(1, dao.create(index1));
+		UniqueIndex index2 = dao.queryForId(index1.id);
+		assertNotNull(index2);
+		assertEquals(index1.id, index2.id);
+		assertEquals(stuff1, index2.stuff);
+		try {
+			dao.create(index1);
+			fail("This should have thrown");
+		} catch (SQLException e) {
+			// expected
+		}
+		String stuff2 = "fewofwgwgwee";
+		index1.stuff = stuff2;
+		assertEquals(1, dao.create(index1));
+
+		PreparedQuery<UniqueIndex> query = dao.queryBuilder().where().eq("stuff", stuff1).prepare();
+		List<UniqueIndex> results = dao.query(query);
+		assertNotNull(results);
 		assertEquals(1, results.size());
-		assertEquals(index1.id, results.get(0).id);
-		assertEquals(index1.stuff, results.get(0).stuff);
+		assertEquals(stuff1, results.get(0).stuff);
+
+		query = dao.queryBuilder().where().eq("stuff", stuff2).prepare();
+		results = dao.query(query);
+		assertNotNull(results);
+		assertEquals(1, results.size());
+		assertEquals(stuff2, results.get(0).stuff);
 	}
 
 	public void testComboFieldIndex() throws Exception {
 		Dao<ComboIndex, Integer> dao = createDao(ComboIndex.class, true);
 		ComboIndex index1 = new ComboIndex();
 		String stuff = "doepqjdpqdq";
-		long junk = 131234124213213L;
+		long junk1 = 131234124213213L;
 		index1.stuff = stuff;
-		index1.junk = junk;
+		index1.junk = junk1;
 		assertEquals(1, dao.create(index1));
 		ComboIndex index2 = dao.queryForId(index1.id);
 		assertNotNull(index2);
 		assertEquals(index1.id, index2.id);
-		assertEquals(index1.stuff, index2.stuff);
-		assertEquals(index1.junk, index2.junk);
+		assertEquals(stuff, index2.stuff);
+		assertEquals(junk1, index2.junk);
+		assertEquals(1, dao.create(index1));
 
 		PreparedQuery<ComboIndex> query = dao.queryBuilder().where().eq("stuff", index1.stuff).prepare();
 		List<ComboIndex> results = dao.query(query);
 		assertNotNull(results);
+		assertEquals(2, results.size());
+		assertEquals(stuff, results.get(0).stuff);
+		assertEquals(junk1, results.get(0).junk);
+		assertEquals(stuff, results.get(1).stuff);
+		assertEquals(junk1, results.get(1).junk);
+	}
+
+	public void testComboUniqueFieldIndex() throws Exception {
+		Dao<ComboUniqueIndex, Integer> dao = createDao(ComboUniqueIndex.class, true);
+		ComboUniqueIndex index1 = new ComboUniqueIndex();
+		String stuff1 = "doepqjdpqdq";
+		long junk = 131234124213213L;
+		index1.stuff = stuff1;
+		index1.junk = junk;
+		assertEquals(1, dao.create(index1));
+		ComboUniqueIndex index2 = dao.queryForId(index1.id);
+		assertNotNull(index2);
+		assertEquals(index1.id, index2.id);
+		assertEquals(index1.stuff, index2.stuff);
+		assertEquals(index1.junk, index2.junk);
+		try {
+			dao.create(index1);
+			fail("This should have thrown");
+		} catch (SQLException e) {
+			// expected
+		}
+		String stuff2 = "fpeowjfewpf";
+		index1.stuff = stuff2;
+		// same junk
+		assertEquals(1, dao.create(index1));
+
+		PreparedQuery<ComboUniqueIndex> query = dao.queryBuilder().where().eq("stuff", stuff1).prepare();
+		List<ComboUniqueIndex> results = dao.query(query);
+		assertNotNull(results);
 		assertEquals(1, results.size());
-		assertEquals(index1.id, results.get(0).id);
-		assertEquals(index1.stuff, results.get(0).stuff);
-		assertEquals(index1.junk, results.get(0).junk);
+		assertEquals(stuff1, results.get(0).stuff);
+		assertEquals(junk, results.get(0).junk);
+
+		query = dao.queryBuilder().where().eq("stuff", stuff2).prepare();
+		results = dao.query(query);
+		assertNotNull(results);
+		assertEquals(1, results.size());
+		assertEquals(stuff2, results.get(0).stuff);
+		assertEquals(junk, results.get(0).junk);
 	}
 
 	/* ==================================================================================== */
@@ -3055,6 +3366,27 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	@DatabaseTable
+	protected static class IndexColumnName {
+		public static final String STUFF_COLUMN_NAME = "notStuff";
+		@DatabaseField(generatedId = true)
+		int id;
+		@DatabaseField(index = true, columnName = STUFF_COLUMN_NAME)
+		String stuff;
+		public IndexColumnName() {
+		}
+	}
+
+	@DatabaseTable
+	protected static class UniqueIndex {
+		@DatabaseField(generatedId = true)
+		int id;
+		@DatabaseField(uniqueIndex = true)
+		String stuff;
+		public UniqueIndex() {
+		}
+	}
+
+	@DatabaseTable
 	protected static class ComboIndex {
 		@DatabaseField(generatedId = true)
 		int id;
@@ -3063,6 +3395,18 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		@DatabaseField(indexName = "stuffjunk")
 		long junk;
 		public ComboIndex() {
+		}
+	}
+
+	@DatabaseTable
+	protected static class ComboUniqueIndex {
+		@DatabaseField(generatedId = true)
+		int id;
+		@DatabaseField(uniqueIndexName = "stuffjunk")
+		String stuff;
+		@DatabaseField(uniqueIndexName = "stuffjunk")
+		long junk;
+		public ComboUniqueIndex() {
 		}
 	}
 

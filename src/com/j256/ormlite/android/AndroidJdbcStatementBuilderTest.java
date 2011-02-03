@@ -12,8 +12,6 @@ import android.test.AndroidTestCase;
 
 import com.j256.ormlite.dao.BaseDaoImpl;
 import com.j256.ormlite.dao.Dao;
-import com.j256.ormlite.db.DatabaseType;
-import com.j256.ormlite.db.SqliteAndroidDatabaseType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.stmt.PreparedQuery;
 import com.j256.ormlite.stmt.QueryBuilder;
@@ -25,7 +23,6 @@ import com.j256.ormlite.table.TableUtils;
 
 public class AndroidJdbcStatementBuilderTest extends AndroidTestCase {
 
-	private DatabaseType databaseType = new SqliteAndroidDatabaseType();
 	private ConnectionSource connectionSource;
 	private OrmDatabaseHelper helper;
 
@@ -52,7 +49,7 @@ public class AndroidJdbcStatementBuilderTest extends AndroidTestCase {
 	}
 
 	private <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
-		return createDao(DatabaseTableConfig.fromClass(databaseType, clazz), createTable);
+		return createDao(DatabaseTableConfig.fromClass(connectionSource, clazz), createTable);
 	}
 
 	private <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
@@ -747,6 +744,21 @@ public class AndroidJdbcStatementBuilderTest extends AndroidTestCase {
 		assertEquals(1, list.size());
 		assertEquals(foo1, list.get(0));
 	}
+
+	public void testWherePrepare() throws Exception {
+		Dao<Foo, String> fooDao = createTestData();
+		List<Foo> results =
+				fooDao.query(fooDao.queryBuilder()
+						.where()
+						.eq(Foo.ID_COLUMN_NAME, foo1.id)
+						.and()
+						.eq(Foo.VAL_COLUMN_NAME, foo1.val)
+						.prepare());
+		assertEquals(1, results.size());
+		assertEquals(foo1, results.get(0));
+	}
+
+	/* ============================================================== */
 
 	protected void checkPartialIterator(Iterator<PartialData> iterator, List<Integer> ids, List<String> firsts,
 			List<String> lasts, boolean firstNull, boolean lastNull) throws SQLException {

@@ -9,8 +9,6 @@ import android.test.AndroidTestCase;
 
 import com.j256.ormlite.dao.BaseDaoImpl;
 import com.j256.ormlite.dao.Dao;
-import com.j256.ormlite.db.DatabaseType;
-import com.j256.ormlite.db.SqliteAndroidDatabaseType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.misc.TransactionManager;
 import com.j256.ormlite.support.ConnectionSource;
@@ -19,7 +17,6 @@ import com.j256.ormlite.table.TableUtils;
 
 public class AndroidJdbcTransactionManagerTest extends AndroidTestCase {
 
-	private DatabaseType databaseType = new SqliteAndroidDatabaseType();
 	private ConnectionSource connectionSource;
 	private OrmDatabaseHelper helper;
 
@@ -46,7 +43,7 @@ public class AndroidJdbcTransactionManagerTest extends AndroidTestCase {
 	}
 
 	private <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
-		return createDao(DatabaseTableConfig.fromClass(databaseType, clazz), createTable);
+		return createDao(DatabaseTableConfig.fromClass(connectionSource, clazz), createTable);
 	}
 
 	private <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
