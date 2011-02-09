@@ -235,6 +235,41 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 		assertEquals(foo2, results.get(1));
 	}
 
+	public void testExists() throws Exception {
+		Dao<Foo, String> fooDao = createTestData();
+		QueryBuilder<Foo, String> innerQb = fooDao.queryBuilder();
+		innerQb.where().idEq(foo1.id);
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
+
+		qb.where().exists(innerQb);
+		List<Foo> results = fooDao.query(qb.prepare());
+		assertEquals(2, results.size());
+		assertEquals(foo1, results.get(0));
+		assertEquals(foo2, results.get(1));
+	}
+
+	public void testExistsNoEntries() throws Exception {
+		Dao<Foo, String> fooDao = createTestData();
+		QueryBuilder<Foo, String> innerQb = fooDao.queryBuilder();
+		innerQb.where().idEq("no id by this name");
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
+
+		qb.where().exists(innerQb);
+		List<Foo> results = fooDao.query(qb.prepare());
+		assertEquals(0, results.size());
+	}
+
+	public void testNotExists() throws Exception {
+		Dao<Foo, String> fooDao = createTestData();
+		QueryBuilder<Foo, String> innerQb = fooDao.queryBuilder();
+		innerQb.where().idEq(foo1.id);
+		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
+
+		qb.where().not().exists(innerQb);
+		List<Foo> results = fooDao.query(qb.prepare());
+		assertEquals(0, results.size());
+	}
+
 	public void testNotIn() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
 		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
@@ -756,6 +791,18 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 						.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo1, results.get(0));
+	}
+
+	public void testIdEq() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
+
+		Foo foo = new Foo();
+		foo.id = "wow id wow";
+		assertEquals(1, fooDao.create(foo));
+
+		List<Foo> results = fooDao.query(fooDao.queryBuilder().where().idEq(fooDao, foo).prepare());
+		assertEquals(1, results.size());
+		assertEquals(foo.id, results.get(0).id);
 	}
 
 	/* ============================================================== */

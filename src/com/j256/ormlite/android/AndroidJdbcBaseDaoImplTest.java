@@ -1441,11 +1441,11 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		String stuff = "eprjpejrre";
 		foo.stuff = stuff;
 
-		GenericRawResults<String[]> results = fooDao.queryRaw("select * from " + FOO_TABLE_NAME);
+		GenericRawResults<String[]> results = fooDao.queryRaw("select id,stuff,val from " + FOO_TABLE_NAME);
 		assertEquals(0, results.getResults().size());
 		assertEquals(1, fooDao.create(foo));
 
-		results = fooDao.queryRaw("select * from " + FOO_TABLE_NAME);
+		results = fooDao.queryRaw("select id,stuff,val from " + FOO_TABLE_NAME);
 		int colN = results.getNumberColumns();
 		String[] colNames = results.getColumnNames();
 		assertEquals(3, colNames.length);
@@ -1487,7 +1487,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		foo.stuff = stuff;
 		foo.val = val;
 
-		GenericRawResults<String[]> results = fooDao.queryRaw("select * from " + FOO_TABLE_NAME);
+		GenericRawResults<String[]> results = fooDao.queryRaw("select id,stuff,val from " + FOO_TABLE_NAME);
 		CloseableIterator<String[]> iterator = results.iterator();
 		try {
 			assertFalse(iterator.hasNext());
@@ -1496,7 +1496,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 		assertEquals(1, fooDao.create(foo));
 
-		results = fooDao.queryRaw("select * from " + FOO_TABLE_NAME);
+		results = fooDao.queryRaw("select id,stuff,val from " + FOO_TABLE_NAME);
 		int colN = results.getNumberColumns();
 		String[] colNames = results.getColumnNames();
 		assertEquals(3, colNames.length);
@@ -1538,10 +1538,10 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		foo.stuff = stuff;
 
 		Mapper mapper = new Mapper();
-		GenericRawResults<Foo> rawResults = fooDao.queryRaw("select * from " + FOO_TABLE_NAME, mapper);
+		GenericRawResults<Foo> rawResults = fooDao.queryRaw("select id,stuff,val from " + FOO_TABLE_NAME, mapper);
 		assertEquals(0, rawResults.getResults().size());
 		assertEquals(1, fooDao.create(foo));
-		rawResults = fooDao.queryRaw("select * from " + FOO_TABLE_NAME, mapper);
+		rawResults = fooDao.queryRaw("select id,stuff,val from " + FOO_TABLE_NAME, mapper);
 		Iterator<Foo> iterator = rawResults.iterator();
 		assertTrue(iterator.hasNext());
 		Foo foo2 = iterator.next();
@@ -1560,8 +1560,8 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		foo.val = val;
 
 		GenericRawResults<Object[]> results =
-				fooDao.queryRaw("select * from " + FOO_TABLE_NAME, new DataType[] { DataType.INTEGER, DataType.STRING,
-						DataType.INTEGER });
+				fooDao.queryRaw("select id,stuff,val from " + FOO_TABLE_NAME, new DataType[] { DataType.INTEGER,
+						DataType.STRING, DataType.INTEGER });
 		CloseableIterator<Object[]> iterator = results.iterator();
 		try {
 			assertFalse(iterator.hasNext());
@@ -1571,8 +1571,8 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(1, fooDao.create(foo));
 
 		results =
-				fooDao.queryRaw("select * from " + FOO_TABLE_NAME, new DataType[] { DataType.INTEGER, DataType.STRING,
-						DataType.INTEGER });
+				fooDao.queryRaw("select id,stuff,val from " + FOO_TABLE_NAME, new DataType[] { DataType.INTEGER,
+						DataType.STRING, DataType.INTEGER });
 		int colN = results.getNumberColumns();
 		String[] colNames = results.getColumnNames();
 		assertEquals(3, colNames.length);
@@ -1614,11 +1614,11 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		String stuff = "eprjpejrre";
 		foo.stuff = stuff;
 
-		RawResults results = fooDao.queryForAllRaw("select * from " + FOO_TABLE_NAME);
+		RawResults results = fooDao.queryForAllRaw("select id,stuff,val from " + FOO_TABLE_NAME);
 		assertEquals(0, results.getResults().size());
 		assertEquals(1, fooDao.create(foo));
 
-		results = fooDao.queryForAllRaw("select * from " + FOO_TABLE_NAME);
+		results = fooDao.queryForAllRaw("select id,stuff,val from " + FOO_TABLE_NAME);
 		int colN = results.getNumberColumns();
 		String[] colNames = results.getColumnNames();
 		assertEquals(3, colNames.length);
@@ -1662,7 +1662,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		String stuff = "eprjpejrre";
 		foo.stuff = stuff;
 
-		RawResults results = fooDao.iteratorRaw("select * from " + FOO_TABLE_NAME);
+		RawResults results = fooDao.iteratorRaw("select id,stuff,val from " + FOO_TABLE_NAME);
 		CloseableIterator<String[]> iterator = results.iterator();
 		try {
 			assertFalse(iterator.hasNext());
@@ -1671,7 +1671,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 		assertEquals(1, fooDao.create(foo));
 
-		results = fooDao.queryForAllRaw("select * from " + FOO_TABLE_NAME);
+		results = fooDao.queryForAllRaw("select id,stuff,val from " + FOO_TABLE_NAME);
 		int colN = results.getNumberColumns();
 		String[] colNames = results.getColumnNames();
 		assertEquals(3, colNames.length);
@@ -1700,7 +1700,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		String stuff = "eprjpejrre";
 		foo.stuff = stuff;
 
-		RawResults rawResults = fooDao.queryForAllRaw("select * from " + FOO_TABLE_NAME);
+		RawResults rawResults = fooDao.queryForAllRaw("select id,stuff,val from " + FOO_TABLE_NAME);
 		assertEquals(0, rawResults.getResults().size());
 		assertEquals(1, fooDao.create(foo));
 		rawResults = fooDao.queryForAllRaw("select * from " + FOO_TABLE_NAME);
@@ -1718,10 +1718,10 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		String stuff = "eprjpejrre";
 		foo.stuff = stuff;
 
-		RawResults rawResults = fooDao.queryForAllRaw("select * from " + FOO_TABLE_NAME);
+		RawResults rawResults = fooDao.queryForAllRaw("select id,stuff,val from " + FOO_TABLE_NAME);
 		assertEquals(0, rawResults.getResults().size());
 		assertEquals(1, fooDao.create(foo));
-		rawResults = fooDao.queryForAllRaw("select * from " + FOO_TABLE_NAME);
+		rawResults = fooDao.queryForAllRaw("select id,stuff,val from " + FOO_TABLE_NAME);
 		Iterator<Foo> iterator = rawResults.iterator(new Mapper());
 		assertTrue(iterator.hasNext());
 		Foo foo2 = iterator.next();
@@ -1888,6 +1888,186 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(1, fooDao.update(updateb.prepare()));
 
 		results = fooDao.query(stmtb.prepare());
+		assertEquals(0, results.size());
+	}
+
+	public void testForeignFieldIdQuery() throws Exception {
+		Dao<ForeignWrapper, Integer> wrapperDao = createDao(ForeignWrapper.class, true);
+		Dao<AllTypes, Integer> foreignDao = createDao(AllTypes.class, true);
+
+		AllTypes foreign = new AllTypes();
+		String stuff1 = "stuff1";
+		foreign.stringField = stuff1;
+		assertEquals(1, foreignDao.create(foreign));
+
+		ForeignWrapper wrapper = new ForeignWrapper();
+		wrapper.foreign = foreign;
+		// this sets the wrapper id
+		assertEquals(1, wrapperDao.create(wrapper));
+
+		QueryBuilder<AllTypes, Integer> qb = foreignDao.queryBuilder();
+
+		List<AllTypes> results = foreignDao.query(qb.where().foreignIdEq(wrapperDao, wrapper).prepare());
+		assertEquals(1, results.size());
+		assertEquals(stuff1, results.get(0).stringField);
+	}
+
+	public void testForeignFieldIdIn() throws Exception {
+		Dao<ForeignWrapper, Integer> wrapperDao = createDao(ForeignWrapper.class, true);
+		Dao<AllTypes, Integer> foreignDao = createDao(AllTypes.class, true);
+
+		AllTypes foreign1 = new AllTypes();
+		String stuff1 = "stuff1";
+		foreign1.stringField = stuff1;
+		assertEquals(1, foreignDao.create(foreign1));
+
+		AllTypes foreign2 = new AllTypes();
+		String stuff2 = "qwdwq3133";
+		foreign2.stringField = stuff2;
+		assertEquals(1, foreignDao.create(foreign2));
+
+		ForeignWrapper wrapper1 = new ForeignWrapper();
+		wrapper1.foreign = foreign1;
+		assertEquals(1, wrapperDao.create(wrapper1));
+		ForeignWrapper wrapper2 = new ForeignWrapper();
+		wrapper2.foreign = foreign2;
+		assertEquals(1, wrapperDao.create(wrapper2));
+
+		QueryBuilder<AllTypes, Integer> qb = foreignDao.queryBuilder();
+
+		List<AllTypes> results = foreignDao.query(qb.where().foreignIdIn(wrapperDao, wrapper1, wrapper2).prepare());
+		assertEquals(2, results.size());
+		assertEquals(stuff1, results.get(0).stringField);
+		assertEquals(stuff2, results.get(1).stringField);
+
+		ArrayList<ForeignWrapper> wrapperList = new ArrayList<ForeignWrapper>();
+		wrapperList.add(wrapper1);
+		wrapperList.add(wrapper2);
+		results = foreignDao.query(qb.where().foreignIdIn(wrapperDao, wrapperList).prepare());
+		assertEquals(2, results.size());
+		assertEquals(stuff1, results.get(0).stringField);
+		assertEquals(stuff2, results.get(1).stringField);
+	}
+
+	public void testInSubQuery() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
+		Dao<Basic, String> basicDao = createDao(Basic.class, true);
+
+		Basic basic1 = new Basic();
+		String string1 = "ewpofjewgprgrg";
+		basic1.id = string1;
+		assertEquals(1, basicDao.create(basic1));
+		Basic basic2 = new Basic();
+		String string2 = "e2432423432wpofjewgprgrg";
+		basic2.id = string2;
+		assertEquals(1, basicDao.create(basic2));
+
+		Foo foo1 = new Foo();
+		foo1.stuff = basic1.id;
+		Foo foo2 = new Foo();
+		foo2.stuff = basic2.id;
+		Foo foo3 = new Foo();
+		String string3 = "neither of the others";
+		foo3.stuff = string3;
+
+		int num1 = 7;
+		for (int i = 0; i < num1; i++) {
+			assertEquals(1, fooDao.create(foo1));
+		}
+		int num2 = 17;
+		for (int i = 0; i < num2; i++) {
+			assertEquals(1, fooDao.create(foo2));
+		}
+		int num3 = 29;
+		long maxId = 0;
+		for (int i = 0; i < num3; i++) {
+			assertEquals(1, fooDao.create(foo3));
+			if (foo3.id > maxId) {
+				maxId = foo3.id;
+			}
+		}
+
+		QueryBuilder<Basic, String> bqb = basicDao.queryBuilder();
+		bqb.selectColumns(Basic.ID_FIELD);
+
+		// string1
+		bqb.where().eq(Basic.ID_FIELD, string1);
+		List<Foo> results = fooDao.query(fooDao.queryBuilder().where().in(Foo.STUFF_FIELD_NAME, bqb).prepare());
+		assertEquals(num1, results.size());
+
+		// string2
+		bqb.where().eq(Basic.ID_FIELD, string2);
+		results = fooDao.query(fooDao.queryBuilder().where().in(Foo.STUFF_FIELD_NAME, bqb).prepare());
+		assertEquals(num2, results.size());
+
+		// ! string2 with not().in(...)
+		bqb.where().eq(Basic.ID_FIELD, string2);
+		results = fooDao.query(fooDao.queryBuilder().where().not().in(Foo.STUFF_FIELD_NAME, bqb).prepare());
+		assertEquals(num1 + num3, results.size());
+
+		// string3 which there should be none
+		bqb.where().eq(Basic.ID_FIELD, string3);
+		results = fooDao.query(fooDao.queryBuilder().where().in(Foo.STUFF_FIELD_NAME, bqb).prepare());
+		assertEquals(0, results.size());
+
+		// string1 OR string2
+		bqb.where().eq(Basic.ID_FIELD, string1).or().eq(Basic.ID_FIELD, string2);
+		results = fooDao.query(fooDao.queryBuilder().where().in(Foo.STUFF_FIELD_NAME, bqb).prepare());
+		assertEquals(num1 + num2, results.size());
+
+		// all strings IN
+		bqb.where().in(Basic.ID_FIELD, string1, string2, string3);
+		results = fooDao.query(fooDao.queryBuilder().where().in(Foo.STUFF_FIELD_NAME, bqb).prepare());
+		assertEquals(num1 + num2, results.size());
+
+		// string1 AND string2 which there should be none
+		bqb.where().eq(Basic.ID_FIELD, string1).and().eq(Basic.ID_FIELD, string2);
+		results = fooDao.query(fooDao.queryBuilder().where().in(Foo.STUFF_FIELD_NAME, bqb).prepare());
+		assertEquals(0, results.size());
+	}
+
+	public void testInSubQuerySelectArgs() throws Exception {
+		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
+		Dao<Basic, String> basicDao = createDao(Basic.class, true);
+
+		Basic basic1 = new Basic();
+		String string1 = "ewpofjewgprgrg";
+		basic1.id = string1;
+		assertEquals(1, basicDao.create(basic1));
+		Basic basic2 = new Basic();
+		String string2 = "e2432423432wpofjewgprgrg";
+		basic2.id = string2;
+		assertEquals(1, basicDao.create(basic2));
+
+		Foo foo1 = new Foo();
+		foo1.stuff = basic1.id;
+		Foo foo2 = new Foo();
+		foo2.stuff = basic2.id;
+
+		int num1 = 7;
+		for (int i = 0; i < num1; i++) {
+			assertEquals(1, fooDao.create(foo1));
+		}
+		int num2 = 17;
+		long maxId = 0;
+		for (int i = 0; i < num2; i++) {
+			assertEquals(1, fooDao.create(foo2));
+			if (foo2.id > maxId) {
+				maxId = foo2.id;
+			}
+		}
+		// using seletArgs
+		SelectArg arg1 = new SelectArg();
+		SelectArg arg2 = new SelectArg();
+		QueryBuilder<Basic, String> bqb = basicDao.queryBuilder();
+		bqb.selectColumns(Basic.ID_FIELD);
+		bqb.where().eq(Basic.ID_FIELD, arg1);
+		PreparedQuery<Foo> preparedQuery =
+				fooDao.queryBuilder().where().in(Foo.STUFF_FIELD_NAME, bqb).and().lt(Foo.ID_FIELD_NAME, arg2).prepare();
+		arg1.setValue(string1);
+		// this should get none
+		arg2.setValue(0);
+		List<Foo> results = fooDao.query(preparedQuery);
 		assertEquals(0, results.size());
 	}
 
@@ -2525,7 +2705,8 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	protected static class Basic {
-		@DatabaseField(id = true)
+		public final static String ID_FIELD = "id";
+		@DatabaseField(id = true, columnName = ID_FIELD)
 		String id;
 	}
 
