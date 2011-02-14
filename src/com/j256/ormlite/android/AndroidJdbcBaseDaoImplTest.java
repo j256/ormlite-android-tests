@@ -1441,11 +1441,12 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		String stuff = "eprjpejrre";
 		foo.stuff = stuff;
 
-		GenericRawResults<String[]> results = fooDao.queryRaw("select id,stuff,val from " + FOO_TABLE_NAME);
+		String queryString = buildFooQueryAllString(fooDao);
+		GenericRawResults<String[]> results = fooDao.queryRaw(queryString);
 		assertEquals(0, results.getResults().size());
 		assertEquals(1, fooDao.create(foo));
 
-		results = fooDao.queryRaw("select id,stuff,val from " + FOO_TABLE_NAME);
+		results = fooDao.queryRaw(queryString);
 		int colN = results.getNumberColumns();
 		String[] colNames = results.getColumnNames();
 		assertEquals(3, colNames.length);
@@ -1487,7 +1488,8 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		foo.stuff = stuff;
 		foo.val = val;
 
-		GenericRawResults<String[]> results = fooDao.queryRaw("select id,stuff,val from " + FOO_TABLE_NAME);
+		String queryString = buildFooQueryAllString(fooDao);
+		GenericRawResults<String[]> results = fooDao.queryRaw(queryString);
 		CloseableIterator<String[]> iterator = results.iterator();
 		try {
 			assertFalse(iterator.hasNext());
@@ -1496,7 +1498,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 		assertEquals(1, fooDao.create(foo));
 
-		results = fooDao.queryRaw("select id,stuff,val from " + FOO_TABLE_NAME);
+		results = fooDao.queryRaw(queryString);
 		int colN = results.getNumberColumns();
 		String[] colNames = results.getColumnNames();
 		assertEquals(3, colNames.length);
@@ -1537,11 +1539,12 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		String stuff = "eprjpejrre";
 		foo.stuff = stuff;
 
+		String queryString = buildFooQueryAllString(fooDao);
 		Mapper mapper = new Mapper();
-		GenericRawResults<Foo> rawResults = fooDao.queryRaw("select id,stuff,val from " + FOO_TABLE_NAME, mapper);
+		GenericRawResults<Foo> rawResults = fooDao.queryRaw(queryString, mapper);
 		assertEquals(0, rawResults.getResults().size());
 		assertEquals(1, fooDao.create(foo));
-		rawResults = fooDao.queryRaw("select id,stuff,val from " + FOO_TABLE_NAME, mapper);
+		rawResults = fooDao.queryRaw(queryString, mapper);
 		Iterator<Foo> iterator = rawResults.iterator();
 		assertTrue(iterator.hasNext());
 		Foo foo2 = iterator.next();
@@ -1559,9 +1562,9 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		foo.stuff = stuff;
 		foo.val = val;
 
+		String queryString = buildFooQueryAllString(fooDao);
 		GenericRawResults<Object[]> results =
-				fooDao.queryRaw("select id,stuff,val from " + FOO_TABLE_NAME, new DataType[] { DataType.INTEGER,
-						DataType.STRING, DataType.INTEGER });
+				fooDao.queryRaw(queryString, new DataType[] { DataType.INTEGER, DataType.STRING, DataType.INTEGER });
 		CloseableIterator<Object[]> iterator = results.iterator();
 		try {
 			assertFalse(iterator.hasNext());
@@ -1570,9 +1573,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 		assertEquals(1, fooDao.create(foo));
 
-		results =
-				fooDao.queryRaw("select id,stuff,val from " + FOO_TABLE_NAME, new DataType[] { DataType.INTEGER,
-						DataType.STRING, DataType.INTEGER });
+		results = fooDao.queryRaw(queryString, new DataType[] { DataType.INTEGER, DataType.STRING, DataType.INTEGER });
 		int colN = results.getNumberColumns();
 		String[] colNames = results.getColumnNames();
 		assertEquals(3, colNames.length);
@@ -1614,11 +1615,12 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		String stuff = "eprjpejrre";
 		foo.stuff = stuff;
 
-		RawResults results = fooDao.queryForAllRaw("select id,stuff,val from " + FOO_TABLE_NAME);
+		String queryString = buildFooQueryAllString(fooDao);
+		RawResults results = fooDao.queryForAllRaw(queryString);
 		assertEquals(0, results.getResults().size());
 		assertEquals(1, fooDao.create(foo));
 
-		results = fooDao.queryForAllRaw("select id,stuff,val from " + FOO_TABLE_NAME);
+		results = fooDao.queryForAllRaw(queryString);
 		int colN = results.getNumberColumns();
 		String[] colNames = results.getColumnNames();
 		assertEquals(3, colNames.length);
@@ -1662,7 +1664,8 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		String stuff = "eprjpejrre";
 		foo.stuff = stuff;
 
-		RawResults results = fooDao.iteratorRaw("select id,stuff,val from " + FOO_TABLE_NAME);
+		String queryString = buildFooQueryAllString(fooDao);
+		RawResults results = fooDao.iteratorRaw(queryString);
 		CloseableIterator<String[]> iterator = results.iterator();
 		try {
 			assertFalse(iterator.hasNext());
@@ -1671,7 +1674,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 		assertEquals(1, fooDao.create(foo));
 
-		results = fooDao.queryForAllRaw("select id,stuff,val from " + FOO_TABLE_NAME);
+		results = fooDao.queryForAllRaw(queryString);
 		int colN = results.getNumberColumns();
 		String[] colNames = results.getColumnNames();
 		assertEquals(3, colNames.length);
@@ -1700,10 +1703,11 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		String stuff = "eprjpejrre";
 		foo.stuff = stuff;
 
-		RawResults rawResults = fooDao.queryForAllRaw("select id,stuff,val from " + FOO_TABLE_NAME);
+		String queryString = buildFooQueryAllString(fooDao);
+		RawResults rawResults = fooDao.queryForAllRaw(queryString);
 		assertEquals(0, rawResults.getResults().size());
 		assertEquals(1, fooDao.create(foo));
-		rawResults = fooDao.queryForAllRaw("select * from " + FOO_TABLE_NAME);
+		rawResults = fooDao.queryForAllRaw(queryString);
 		List<Foo> results = rawResults.getMappedResults(new Mapper());
 		assertEquals(1, results.size());
 		Foo foo2 = results.get(0);
@@ -1718,10 +1722,11 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		String stuff = "eprjpejrre";
 		foo.stuff = stuff;
 
-		RawResults rawResults = fooDao.queryForAllRaw("select id,stuff,val from " + FOO_TABLE_NAME);
+		String queryString = buildFooQueryAllString(fooDao);
+		RawResults rawResults = fooDao.queryForAllRaw(queryString);
 		assertEquals(0, rawResults.getResults().size());
 		assertEquals(1, fooDao.create(foo));
-		rawResults = fooDao.queryForAllRaw("select id,stuff,val from " + FOO_TABLE_NAME);
+		rawResults = fooDao.queryForAllRaw(queryString);
 		Iterator<Foo> iterator = rawResults.iterator(new Mapper());
 		assertTrue(iterator.hasNext());
 		Foo foo2 = iterator.next();
@@ -2576,6 +2581,14 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(1, results.size());
 		assertTrue(allDao.objectsEqual(allTypes, results.get(0)));
 		return true;
+	}
+
+	private String buildFooQueryAllString(Dao<Foo, Object> fooDao) throws SQLException {
+		String queryString =
+				fooDao.queryBuilder()
+						.selectColumns(Foo.ID_FIELD_NAME, Foo.STUFF_FIELD_NAME, Foo.VAL_FIELD_NAME)
+						.prepareStatementString();
+		return queryString;
 	}
 
 	private interface TestableType<ID> {
