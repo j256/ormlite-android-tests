@@ -44,6 +44,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	private final boolean CLOSE_IS_NOOP = true;
 	private final boolean UPDATE_ROWS_RETURNS_ONE = true;
+	private final boolean TABLE_EXISTS_WORKS = false;
 
 	private DatabaseType databaseType = new SqliteAndroidDatabaseType();
 	private ConnectionSource connectionSource;
@@ -2159,12 +2160,31 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		checkTypeAsId(StringId.class, "foo", "bar");
 	}
 
+	public void testLongStringAsId() throws Exception {
+		try {
+			createDao(LongStringId.class, true);
+			fail("expected exception");
+		} catch (SQLException e) {
+			// expected
+		}
+	}
+
 	public void testBooleanAsId() throws Exception {
-		checkTypeAsId(BooleanId.class, true, false);
+		try {
+			createDao(BooleanId.class, true);
+			fail("expected exception");
+		} catch (SQLException e) {
+			// expected
+		}
 	}
 
 	public void testBooleanObjAsId() throws Exception {
-		checkTypeAsId(BooleanObjId.class, true, false);
+		try {
+			createDao(BooleanObjId.class, true);
+			fail("expected exception");
+		} catch (SQLException e) {
+			// expected
+		}
 	}
 
 	public void testDateAsId() throws Exception {
@@ -2471,6 +2491,35 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(junk, results.get(0).junk);
 	}
 
+	public void testLongVarChar() throws Exception {
+		Dao<LongVarChar, Integer> dao = createDao(LongVarChar.class, true);
+		LongVarChar lvc = new LongVarChar();
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < 1024; i++) {
+			sb.append(".");
+		}
+		String stuff = sb.toString();
+		lvc.stuff = stuff;
+		assertEquals(1, dao.create(lvc));
+
+		LongVarChar lvc2 = dao.queryForId(lvc.id);
+		assertNotNull(lvc2);
+		assertEquals(stuff, lvc2.stuff);
+	}
+
+	public void testTableExists() throws Exception {
+		if (!TABLE_EXISTS_WORKS) {
+			return;
+		}
+		Dao<Foo, Integer> dao = createDao(Foo.class, false);
+		assertFalse(dao.isTableExists());
+		TableUtils.createTable(connectionSource, Foo.class);
+		assertTrue(dao.isTableExists());
+
+		TableUtils.dropTable(connectionSource, Foo.class, false);
+		assertFalse(dao.isTableExists());
+	}
+
 	/* ==================================================================================== */
 
 	private <T extends TestableType<ID>, ID> void checkTypeAsId(Class<T> clazz, ID id1, ID id2) throws Exception {
@@ -2770,9 +2819,9 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		boolean booleanField;
 		@DatabaseField(columnName = DATE_FIELD_NAME)
 		Date dateField;
-		@DatabaseField(columnName = DATE_LONG_FIELD_NAME, dataType = DataType.JAVA_DATE_LONG)
+		@DatabaseField(columnName = DATE_LONG_FIELD_NAME, dataType = DataType.DATE_LONG)
 		Date dateLongField;
-		@DatabaseField(columnName = DATE_STRING_FIELD_NAME, dataType = DataType.JAVA_DATE_STRING, format = DEFAULT_DATE_STRING_FORMAT)
+		@DatabaseField(columnName = DATE_STRING_FIELD_NAME, dataType = DataType.DATE_STRING, format = DEFAULT_DATE_STRING_FORMAT)
 		Date dateStringField;
 		@DatabaseField(columnName = BYTE_FIELD_NAME)
 		byte byteField;
@@ -2805,9 +2854,9 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		String stringField;
 		@DatabaseField(defaultValue = DEFAULT_DATE_VALUE)
 		Date dateField;
-		@DatabaseField(dataType = DataType.JAVA_DATE_LONG, defaultValue = DEFAULT_DATE_LONG_VALUE)
+		@DatabaseField(dataType = DataType.DATE_LONG, defaultValue = DEFAULT_DATE_LONG_VALUE)
 		Date dateLongField;
-		@DatabaseField(dataType = DataType.JAVA_DATE_STRING, defaultValue = DEFAULT_DATE_STRING_VALUE, format = DEFAULT_DATE_STRING_FORMAT)
+		@DatabaseField(dataType = DataType.DATE_STRING, defaultValue = DEFAULT_DATE_STRING_VALUE, format = DEFAULT_DATE_STRING_FORMAT)
 		Date dateStringField;
 		@DatabaseField(defaultValue = DEFAULT_BOOLEAN_VALUE)
 		boolean booleanField;
@@ -3110,6 +3159,26 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	@DatabaseTable
+	protected static class LongStringId implements TestableType<String> {
+		@DatabaseField(id = true, dataType = DataType.LONG_STRING)
+		String id;
+		@DatabaseField
+		String stuff;
+		public String getId() {
+			return id;
+		}
+		public void setId(String id) {
+			this.id = id;
+		}
+		public String getStuff() {
+			return stuff;
+		}
+		public void setStuff(String stuff) {
+			this.stuff = stuff;
+		}
+	}
+
+	@DatabaseTable
 	protected static class BooleanId implements TestableType<Boolean> {
 		@DatabaseField(id = true)
 		boolean id;
@@ -3171,7 +3240,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	@DatabaseTable
 	protected static class DateLongId implements TestableType<Date> {
-		@DatabaseField(id = true, dataType = DataType.JAVA_DATE_LONG)
+		@DatabaseField(id = true, dataType = DataType.DATE_LONG)
 		Date id;
 		@DatabaseField
 		String stuff;
@@ -3191,7 +3260,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	@DatabaseTable
 	protected static class DateStringId implements TestableType<Date> {
-		@DatabaseField(id = true, dataType = DataType.JAVA_DATE_STRING)
+		@DatabaseField(id = true, dataType = DataType.DATE_STRING)
 		Date id;
 		@DatabaseField
 		String stuff;
@@ -3601,6 +3670,16 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		@DatabaseField(uniqueIndexName = "stuffjunk")
 		long junk;
 		public ComboUniqueIndex() {
+		}
+	}
+
+	@DatabaseTable
+	protected static class LongVarChar {
+		@DatabaseField(generatedId = true)
+		int id;
+		@DatabaseField(dataType = DataType.LONG_STRING)
+		String stuff;
+		public LongVarChar() {
 		}
 	}
 
