@@ -2495,7 +2495,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		Dao<LongVarChar, Integer> dao = createDao(LongVarChar.class, true);
 		LongVarChar lvc = new LongVarChar();
 		StringBuilder sb = new StringBuilder();
-		for (int i = 0; i < 1024; i++) {
+		for (int i = 0; i < 10240; i++) {
 			sb.append(".");
 		}
 		String stuff = sb.toString();
