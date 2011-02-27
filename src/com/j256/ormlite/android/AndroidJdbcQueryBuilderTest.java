@@ -12,7 +12,6 @@ import android.test.AndroidTestCase;
 
 import com.j256.ormlite.dao.BaseDaoImpl;
 import com.j256.ormlite.dao.Dao;
-import com.j256.ormlite.db.DatabaseType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.stmt.PreparedQuery;
 import com.j256.ormlite.stmt.QueryBuilder;
@@ -25,7 +24,6 @@ import com.j256.ormlite.table.TableUtils;
 public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 
 	private ConnectionSource connectionSource;
-	private DatabaseType databaseType;
 	private OrmDatabaseHelper helper;
 
 	private Set<DatabaseTableConfig<?>> dropClassSet = new HashSet<DatabaseTableConfig<?>>();
@@ -35,7 +33,6 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 		super.setUp();
 		helper = new OrmDatabaseHelper(getContext());
 		connectionSource = helper.getConnectionSource();
-		databaseType = connectionSource.getDatabaseType();
 	}
 
 	@Override
@@ -679,31 +676,6 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 		assertEquals(foo1, results.get(0));
 	}
 
-	public void testOffsetWorks() throws Exception {
-		if (!databaseType.isLimitSqlSupported()) {
-			return;
-		}
-
-		Dao<Foo, Object> dao = createDao(Foo.class, true);
-		Foo foo1 = new Foo();
-		foo1.id = "stuff1";
-		assertEquals(1, dao.create(foo1));
-		Foo foo2 = new Foo();
-		foo2.id = "stuff2";
-		assertEquals(1, dao.create(foo2));
-
-		assertEquals(2, dao.queryForAll().size());
-
-		QueryBuilder<Foo, Object> qb = dao.queryBuilder();
-		int offset = 1;
-		int limit = 2;
-		qb.offset(offset);
-		qb.limit(limit);
-		List<Foo> results = dao.query(qb.prepare());
-
-		assertEquals(1, results.size());
-	}
-
 	public void testLimitAfterSelect() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
 		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
@@ -722,6 +694,47 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
+	}
+
+	public void testOffsetWithLimit() throws Exception {
+		Dao<Foo, Object> dao = createDao(Foo.class, true);
+		Foo foo1 = new Foo();
+		foo1.id = "stuff1";
+		assertEquals(1, dao.create(foo1));
+		Foo foo2 = new Foo();
+		foo2.id = "stuff2";
+		assertEquals(1, dao.create(foo2));
+		assertEquals(2, dao.queryForAll().size());
+
+		QueryBuilder<Foo, Object> qb = dao.queryBuilder();
+		int offset = 1;
+		int limit = 2;
+		qb.offset(offset);
+		qb.limit(limit);
+		List<Foo> results = dao.query(qb.prepare());
+
+		assertEquals(1, results.size());
+	}
+
+	public void testOffsetNoLimit() throws Exception {
+		Dao<Foo, Object> dao = createDao(Foo.class, true);
+		Foo foo1 = new Foo();
+		foo1.id = "stuff1";
+		assertEquals(1, dao.create(foo1));
+		Foo foo2 = new Foo();
+		foo2.id = "stuff2";
+		assertEquals(1, dao.create(foo2));
+		assertEquals(2, dao.queryForAll().size());
+
+		QueryBuilder<Foo, Object> qb = dao.queryBuilder();
+		int offset = 1;
+		qb.offset(offset);
+		try {
+			dao.query(qb.prepare());
+			fail("expected exception");
+		} catch (SQLException e) {
+			// expected
+		}
 	}
 
 	public void testReturnId() throws Exception {
@@ -915,13 +928,16 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 		public static final String NULL_COLUMN_NAME = "null";
 
 		@DatabaseField(id = true, columnName = ID_COLUMN_NAME)
-		String id;
+		public String id;
 		@DatabaseField(columnName = VAL_COLUMN_NAME)
-		int val;
+		public int val;
 		@DatabaseField(columnName = EQUAL_COLUMN_NAME)
-		int equal;
+		public int equal;
 		@DatabaseField(columnName = NULL_COLUMN_NAME)
-		String nullField;
+		public String nullField;
+		public Foo() {
+			// for ormlite
+		}
 		@Override
 		public String toString() {
 			return "Foo:" + id;
