@@ -1610,6 +1610,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public void testRawResults() throws Exception {
 		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
 		Foo foo = new Foo();
@@ -1659,6 +1660,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public void testRawResultsIterator() throws Exception {
 		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
 		Foo foo = new Foo();
@@ -1698,6 +1700,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public void testRawResultsMappedList() throws Exception {
 		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
 		final Foo foo = new Foo();
@@ -1717,6 +1720,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(foo.val, foo2.val);
 	}
 
+	@SuppressWarnings("deprecation")
 	public void testRawResultsMappedIterator() throws Exception {
 		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
 		final Foo foo = new Foo();
@@ -2294,6 +2298,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public void testInteratorForAllRaw() throws Exception {
 		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		int valSum = 0;
@@ -2529,6 +2534,22 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 		TableUtils.dropTable(connectionSource, Foo.class, false);
 		assertFalse(dao.isTableExists());
+	}
+
+	public void testRaw() throws Exception {
+		Dao<Foo, Integer> dao = createDao(Foo.class, true);
+		Foo foo = new Foo();
+		int val = 131265312;
+		foo.val = val;
+		assertEquals(1, dao.create(foo));
+		StringBuilder sb = new StringBuilder();
+		databaseType.appendEscapedEntityName(sb, Foo.VAL_FIELD_NAME);
+		String fieldName = sb.toString();
+		QueryBuilder<Foo, Integer> qb = dao.queryBuilder();
+		qb.where().eq(Foo.ID_FIELD_NAME, foo.id).and().raw(fieldName + " = " + val);
+		assertEquals(1, dao.query(qb.prepare()).size());
+		qb.where().eq(Foo.ID_FIELD_NAME, foo.id).and().raw(fieldName + " != " + val);
+		assertEquals(0, dao.query(qb.prepare()).size());
 	}
 
 	/* ==================================================================================== */
@@ -2846,7 +2867,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		float floatField;
 		@DatabaseField(columnName = DOUBLE_FIELD_NAME)
 		double doubleField;
-		@DatabaseField(columnName = SERIAL_FIELD_NAME)
+		@DatabaseField(columnName = SERIAL_FIELD_NAME, dataType = DataType.SERIALIZABLE)
 		SerialData serialField;
 		@DatabaseField(columnName = ENUM_FIELD_NAME)
 		OurEnum enumField;
@@ -2897,7 +2918,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		double doubleField;
 		@DatabaseField(defaultValue = DEFAULT_DOUBLE_VALUE)
 		Double doubleObj;
-		@DatabaseField
+		@DatabaseField(dataType = DataType.SERIALIZABLE)
 		SerialData objectField;
 		@DatabaseField(defaultValue = DEFAULT_ENUM_VALUE)
 		OurEnum ourEnum;
@@ -2937,7 +2958,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		Float floatField;
 		@DatabaseField
 		Double doubleField;
-		@DatabaseField
+		@DatabaseField(dataType = DataType.SERIALIZABLE)
 		SerialData objectField;
 		@DatabaseField
 		OurEnum ourEnum;
@@ -3010,7 +3031,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	protected static class ObjectHolder {
 		@DatabaseField(generatedId = true)
 		public int id;
-		@DatabaseField
+		@DatabaseField(dataType = DataType.SERIALIZABLE)
 		public SerialData obj;
 		@DatabaseField(dataType = DataType.SERIALIZABLE)
 		public String strObj;
@@ -3591,7 +3612,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	@DatabaseTable
 	protected static class SerializableId implements TestableType<SerialData> {
-		@DatabaseField(id = true)
+		@DatabaseField(id = true, dataType = DataType.SERIALIZABLE)
 		SerialData serial;
 		@DatabaseField
 		String stuff;
