@@ -14,6 +14,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 
 import android.test.AndroidTestCase;
@@ -29,6 +30,7 @@ import com.j256.ormlite.db.SqliteAndroidDatabaseType;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.DatabaseFieldConfig;
+import com.j256.ormlite.misc.BaseDaoEnabled;
 import com.j256.ormlite.stmt.DeleteBuilder;
 import com.j256.ormlite.stmt.PreparedQuery;
 import com.j256.ormlite.stmt.QueryBuilder;
@@ -44,13 +46,16 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	private final boolean CLOSE_IS_NOOP = true;
 	private final boolean UPDATE_ROWS_RETURNS_ONE = true;
-	private final boolean TABLE_EXISTS_WORKS = false;
 
 	private DatabaseType databaseType = new SqliteAndroidDatabaseType();
 	private ConnectionSource connectionSource;
 	private OrmDatabaseHelper helper;
 
 	private Set<DatabaseTableConfig<?>> dropClassSet = new HashSet<DatabaseTableConfig<?>>();
+
+	protected boolean isTableExistsWorks() {
+		return false;
+	}
 
 	@Override
 	protected void setUp() throws Exception {
@@ -170,6 +175,9 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	private final static String DEFAULT_ENUM_NUMBER_VALUE = "1";
 
 	public void testCreateDaoStatic() throws Exception {
+		if (connectionSource == null) {
+			return;
+		}
 		createTable(Foo.class, true);
 		Dao<Foo, Integer> fooDao = BaseDaoImpl.createDao(connectionSource, Foo.class);
 		String stuff = "stuff";
@@ -663,6 +671,9 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testSpringConstruction() throws Exception {
+		if (connectionSource == null) {
+			return;
+		}
 		createTable(Foo.class, true);
 		BaseDaoImpl<Foo, Integer> fooDao = new BaseDaoImpl<Foo, Integer>(Foo.class) {
 		};
@@ -1149,6 +1160,9 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testStringWidthTooLong() throws Exception {
+		if (connectionSource == null) {
+			return;
+		}
 		if (!connectionSource.getDatabaseType().isVarcharFieldWidthSupported()) {
 			return;
 		}
@@ -1224,6 +1238,9 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testEscapeCharInField() throws Exception {
+		if (connectionSource == null) {
+			return;
+		}
 		StringBuilder sb = new StringBuilder();
 		String word = "foo";
 		connectionSource.getDatabaseType().appendEscapedWord(sb, word);
@@ -1610,7 +1627,6 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	public void testRawResults() throws Exception {
 		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
 		Foo foo = new Foo();
@@ -1660,7 +1676,6 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	public void testRawResultsIterator() throws Exception {
 		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
 		Foo foo = new Foo();
@@ -1700,7 +1715,6 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	public void testRawResultsMappedList() throws Exception {
 		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
 		final Foo foo = new Foo();
@@ -1720,7 +1734,6 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(foo.val, foo2.val);
 	}
 
-	@SuppressWarnings("deprecation")
 	public void testRawResultsMappedIterator() throws Exception {
 		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
 		final Foo foo = new Foo();
@@ -2240,7 +2253,6 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	public void testInteratorForAllRaw() throws Exception {
 		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		int valSum = 0;
@@ -2466,7 +2478,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testTableExists() throws Exception {
-		if (!TABLE_EXISTS_WORKS) {
+		if (!isTableExistsWorks()) {
 			return;
 		}
 		Dao<Foo, Integer> dao = createDao(Foo.class, false);
@@ -2492,6 +2504,63 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(1, dao.query(qb.prepare()).size());
 		qb.where().eq(Foo.ID_FIELD_NAME, foo.id).and().raw(fieldName + " != " + val);
 		assertEquals(0, dao.query(qb.prepare()).size());
+	}
+
+	public void testUuidInsertQuery() throws Exception {
+		Dao<UuidGeneratedId, UUID> dao = createDao(UuidGeneratedId.class, true);
+		UuidGeneratedId uuid1 = new UuidGeneratedId();
+		String stuff1 = "fopewfjefjwgw";
+		uuid1.stuff = stuff1;
+		assertNull(uuid1.id);
+		assertEquals(1, dao.create(uuid1));
+		assertNotNull(uuid1.id);
+
+		UuidGeneratedId uuid2 = new UuidGeneratedId();
+		String stuff2 = "fopefewjfepowfjefjwgw";
+		uuid2.stuff = stuff2;
+		assertNull(uuid2.id);
+		assertEquals(1, dao.create(uuid2));
+		assertNotNull(uuid2.id);
+		assertFalse(uuid1.id.equals(uuid2.id));
+
+		List<UuidGeneratedId> uuids = dao.queryForAll();
+		assertEquals(2, uuids.size());
+		UuidGeneratedId uuid3 = dao.queryForId(uuid1.id);
+		assertEquals(stuff1, uuid3.stuff);
+		uuid3 = dao.queryForId(uuid2.id);
+		assertEquals(stuff2, uuid3.stuff);
+	}
+
+	public void testBaseDaoEnabled() throws Exception {
+		Dao<One, Integer> dao = createDao(One.class, true);
+		One one = new One();
+		String stuff = "fewpfjewfew";
+		one.stuff = stuff;
+		one.setDao(dao);
+		assertEquals(1, one.create());
+	}
+
+	public void testBaseDaoEnabledForeign() throws Exception {
+		Dao<One, Integer> oneDao = createDao(One.class, true);
+		Dao<ForeignDaoEnabled, Integer> foreignDao = createDao(ForeignDaoEnabled.class, true);
+
+		One one = new One();
+		String stuff = "fewpfjewfew";
+		one.stuff = stuff;
+		one.setDao(oneDao);
+		assertEquals(1, one.create());
+
+		ForeignDaoEnabled foreign = new ForeignDaoEnabled();
+		foreign.one = one;
+		foreign.setDao(foreignDao);
+		assertEquals(1, foreign.create());
+
+		ForeignDaoEnabled foreign2 = foreignDao.queryForId(foreign.id);
+		assertNotNull(foreign2);
+		assertEquals(one.id, foreign2.one.id);
+		assertNull(foreign2.one.stuff);
+		assertEquals(1, foreign2.one.refresh());
+		assertEquals(stuff, foreign2.one.stuff);
 	}
 
 	/* ==================================================================================== */
@@ -3680,6 +3749,33 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		String stuff;
 		public Sub() {
 			// for ormlite
+		}
+	}
+
+	protected static class UuidGeneratedId {
+		@DatabaseField(generatedId = true)
+		public UUID id;
+		@DatabaseField
+		public String stuff;
+		public UuidGeneratedId() {
+		}
+	}
+
+	protected static class One extends BaseDaoEnabled<One, Integer> {
+		@DatabaseField(generatedId = true)
+		public int id;
+		@DatabaseField
+		public String stuff;
+		public One() {
+		}
+	}
+
+	protected static class ForeignDaoEnabled extends BaseDaoEnabled<ForeignDaoEnabled, Integer> {
+		@DatabaseField(generatedId = true)
+		public int id;
+		@DatabaseField(foreign = true)
+		public One one;
+		public ForeignDaoEnabled() {
 		}
 	}
 }
