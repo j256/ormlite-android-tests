@@ -5,5 +5,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/ormlite-android"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/ormlite-core"/>
 	<classpathentry kind="src" path="gen"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.launching.macosx.MacOSXType/JVM 1.5.0"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
