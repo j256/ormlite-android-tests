@@ -419,17 +419,10 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	public void testIteratePageSize() throws Exception {
 		final Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
-		// do a mass insert of 1000 items
-		fooDao.callBatchTasks(new Callable<Void>() {
-			public Void call() throws Exception {
-				for (int i = 0; i < 1000; i++) {
-					Foo foo = new Foo();
-					foo.stuff = Integer.toString(i);
-					assertEquals(1, fooDao.create(foo));
-				}
-				return null;
-			}
-		});
+
+		int numItems = 1000;
+		fooDao.callBatchTasks(new InsertCallable(numItems, fooDao));
+
 		// now delete them with the iterator to test page-size
 		Iterator<Foo> iterator = fooDao.iterator();
 		while (iterator.hasNext()) {
@@ -440,18 +433,9 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	public void testIteratorPreparedQuery() throws Exception {
 		final Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
-		// do an insert of 100 items
+		// do an insert of bunch of items
 		final int numItems = 100;
-		fooDao.callBatchTasks(new Callable<Void>() {
-			public Void call() throws Exception {
-				for (int i = 0; i < numItems; i++) {
-					Foo foo = new Foo();
-					foo.val = i;
-					assertEquals(1, fooDao.create(foo));
-				}
-				return null;
-			}
-		});
+		fooDao.callBatchTasks(new InsertCallable(numItems, fooDao));
 
 		int lastX = 10;
 		PreparedQuery<Foo> preparedQuery =
@@ -466,6 +450,23 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 			itemC++;
 		}
 		assertEquals(lastX, itemC);
+	}
+
+	private class InsertCallable implements Callable<Void> {
+		private int numItems;
+		private Dao<Foo, Integer> fooDao;
+		public InsertCallable(int numItems, Dao<Foo, Integer> fooDao) {
+			this.numItems = numItems;
+			this.fooDao = fooDao;
+		}
+		public Void call() throws Exception {
+			for (int i = 0; i < numItems; i++) {
+				Foo foo = new Foo();
+				foo.val = i;
+				assertEquals(1, fooDao.create(foo));
+			}
+			return null;
+		}
 	}
 
 	public void testDeleteObjects() throws Exception {
@@ -1629,6 +1630,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public void testRawResults() throws Exception {
 		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
 		Foo foo = new Foo();
@@ -1678,6 +1680,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public void testRawResultsIterator() throws Exception {
 		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
 		Foo foo = new Foo();
@@ -1717,6 +1720,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public void testRawResultsMappedList() throws Exception {
 		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
 		final Foo foo = new Foo();
@@ -1736,6 +1740,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(foo.val, foo2.val);
 	}
 
+	@SuppressWarnings("deprecation")
 	public void testRawResultsMappedIterator() throws Exception {
 		Dao<Foo, Object> fooDao = createDao(Foo.class, true);
 		final Foo foo = new Foo();
@@ -2255,6 +2260,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
+	@SuppressWarnings("deprecation")
 	public void testInteratorForAllRaw() throws Exception {
 		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		int valSum = 0;
