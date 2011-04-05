@@ -80,7 +80,7 @@ public class AndroidDistinctCursorBugTest extends AndroidTestCase {
 		}
 	}
 
-	private class Helper extends SQLiteOpenHelper {
+	private static class Helper extends SQLiteOpenHelper {
 		public Helper(Context context, String name, CursorFactory factory, int version) {
 			super(context, name, factory, version);
 		}

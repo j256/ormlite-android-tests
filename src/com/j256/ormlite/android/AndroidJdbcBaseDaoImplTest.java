@@ -38,6 +38,7 @@ import com.j256.ormlite.stmt.PreparedQuery;
 import com.j256.ormlite.stmt.QueryBuilder;
 import com.j256.ormlite.stmt.SelectArg;
 import com.j256.ormlite.stmt.UpdateBuilder;
+import com.j256.ormlite.stmt.Where;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.DatabaseTable;
 import com.j256.ormlite.table.DatabaseTableConfig;
@@ -46,8 +47,8 @@ import com.j256.ormlite.table.TableUtils;
 @SuppressWarnings("deprecation")
 public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
-	private final boolean CLOSE_IS_NOOP = true;
-	private final boolean UPDATE_ROWS_RETURNS_ONE = true;
+	private final static boolean CLOSE_IS_NOOP = true;
+	private final static boolean UPDATE_ROWS_RETURNS_ONE = true;
 
 	private DatabaseType databaseType = new SqliteAndroidDatabaseType();
 	private ConnectionSource connectionSource;
@@ -1036,6 +1037,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		Date dateVal = new Date(millis);
 		Date dateLongVal = new Date(millis);
 		Date dateStringVal = new Date(millis);
+		char charVal = 'w';
 		byte byteVal = 117;
 		short shortVal = 15217;
 		int intVal = 1023213;
@@ -1048,6 +1050,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		allTypes.dateField = dateVal;
 		allTypes.dateLongField = dateLongVal;
 		allTypes.dateStringField = dateStringVal;
+		allTypes.charField = charVal;
 		allTypes.byteField = byteVal;
 		allTypes.shortField = shortVal;
 		allTypes.intField = intVal;
@@ -1075,6 +1078,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		checkQueryResult(allDao, qb, allTypes, AllTypes.DATE_FIELD_NAME, dateVal, true);
 		checkQueryResult(allDao, qb, allTypes, AllTypes.DATE_LONG_FIELD_NAME, dateLongVal, true);
 		checkQueryResult(allDao, qb, allTypes, AllTypes.DATE_STRING_FIELD_NAME, dateStringVal, true);
+		checkQueryResult(allDao, qb, allTypes, AllTypes.CHAR_FIELD_NAME, charVal, true);
 		checkQueryResult(allDao, qb, allTypes, AllTypes.BYTE_FIELD_NAME, byteVal, true);
 		checkQueryResult(allDao, qb, allTypes, AllTypes.SHORT_FIELD_NAME, shortVal, true);
 		checkQueryResult(allDao, qb, allTypes, AllTypes.INT_FIELD_NAME, intVal, true);
@@ -1203,12 +1207,12 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	public void testCreateReserverdTable() throws Exception {
-		Dao<Where, String> whereDao = createDao(Where.class, true);
+		Dao<Create, String> whereDao = createDao(Create.class, true);
 		String id = "from-string";
-		Where where = new Where();
+		Create where = new Create();
 		where.id = id;
 		assertEquals(1, whereDao.create(where));
-		Where where2 = whereDao.queryForId(id);
+		Create where2 = whereDao.queryForId(id);
 		assertEquals(id, where2.id);
 		assertEquals(1, whereDao.delete(where2));
 		assertNull(whereDao.queryForId(id));
@@ -2742,6 +2746,114 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(4, orderC);
 	}
 
+	@SuppressWarnings("unchecked")
+	public void testUseOfAndMany() throws Exception {
+		Dao<Foo, Integer> dao = createDao(Foo.class, true);
+		assertEquals(0, dao.countOf());
+		Foo foo = new Foo();
+		int id = 1;
+		foo.id = id;
+		int val = 1231231;
+		foo.val = val;
+		assertEquals(1, dao.create(foo));
+		int notId = id + 1;
+		foo.id = notId;
+		foo.val = val + 1;
+		assertEquals(1, dao.create(foo));
+
+		Where<Foo, Integer> where = dao.queryBuilder().where();
+		where.andMany(where.eq(Foo.VAL_FIELD_NAME, val), where.eq(Foo.ID_FIELD_NAME, id));
+
+		List<Foo> results = where.query();
+		assertEquals(1, results.size());
+		assertEquals(id, results.get(0).id);
+
+		// this should match none
+		where.clear();
+		where.andMany(where.eq(Foo.VAL_FIELD_NAME, val), where.eq(Foo.ID_FIELD_NAME, id),
+				where.eq(Foo.ID_FIELD_NAME, notId));
+		results = where.query();
+		assertEquals(0, results.size());
+	}
+
+	@SuppressWarnings("unchecked")
+	public void testUseOfOrMany() throws Exception {
+		Dao<Foo, Integer> dao = createDao(Foo.class, true);
+		assertEquals(0, dao.countOf());
+		Foo foo = new Foo();
+		int id = 1;
+		foo.id = id;
+		int val = 1231231;
+		foo.val = val;
+		assertEquals(1, dao.create(foo));
+		int notId = id + 1;
+		foo.id = notId;
+		foo.val = val + 1;
+		assertEquals(1, dao.create(foo));
+
+		Where<Foo, Integer> where = dao.queryBuilder().where();
+		where.orMany(where.eq(Foo.ID_FIELD_NAME, id), where.eq(Foo.ID_FIELD_NAME, notId),
+				where.eq(Foo.VAL_FIELD_NAME, val + 1), where.eq(Foo.VAL_FIELD_NAME, val + 1));
+
+		List<Foo> results = where.query();
+		assertEquals(2, results.size());
+		assertEquals(id, results.get(0).id);
+		assertEquals(notId, results.get(1).id);
+	}
+
+	public void testQueryForMatching() throws Exception {
+		Dao<Foo, Integer> dao = createDao(Foo.class, true);
+		assertEquals(0, dao.countOf());
+		Foo foo = new Foo();
+		int id = 1;
+		foo.id = id;
+		int val = 1231231;
+		foo.val = val;
+		assertEquals(1, dao.create(foo));
+		int notId = id + 1;
+		foo.id = notId;
+		foo.val = val + 1;
+		assertEquals(1, dao.create(foo));
+
+		Foo match = new Foo();
+		match.val = val;
+		List<Foo> results = dao.queryForMatching(match);
+		assertEquals(1, results.size());
+		assertEquals(id, results.get(0).id);
+
+		match = new Foo();
+		match.id = notId;
+		match.val = val;
+		results = dao.queryForMatching(match);
+		assertEquals(0, results.size());
+	}
+
+	public void testQueryForFieldValues() throws Exception {
+		Dao<Foo, Integer> dao = createDao(Foo.class, true);
+		assertEquals(0, dao.countOf());
+		Foo foo = new Foo();
+		int id = 1;
+		foo.id = id;
+		int val = 1231231;
+		foo.val = val;
+		assertEquals(1, dao.create(foo));
+		int notId = id + 1;
+		foo.id = notId;
+		foo.val = val + 1;
+		assertEquals(1, dao.create(foo));
+
+		Map<String, Object> fieldValues = new HashMap<String, Object>();
+		fieldValues.put(Foo.VAL_FIELD_NAME, val);
+		List<Foo> results = dao.queryForFieldValues(fieldValues);
+		assertEquals(1, results.size());
+		assertEquals(id, results.get(0).id);
+
+		fieldValues.put(Foo.ID_FIELD_NAME, notId);
+		fieldValues.put(Foo.VAL_FIELD_NAME, val);
+		results = dao.queryForFieldValues(fieldValues);
+		assertEquals(0, results.size());
+	}
+
 	/* ==================================================================================== */
 
 	private <T extends TestableType<ID>, ID> void checkTypeAsId(Class<T> clazz, ID id1, ID id2) throws Exception {
@@ -3024,6 +3136,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		public static final String DATE_LONG_FIELD_NAME = "dateLongField";
 		public static final String DATE_STRING_FIELD_NAME = "dateStringField";
 		public static final String SERIAL_FIELD_NAME = "serialField";
+		public static final String CHAR_FIELD_NAME = "charField";
 		public static final String BYTE_FIELD_NAME = "byteField";
 		public static final String SHORT_FIELD_NAME = "shortField";
 		public static final String INT_FIELD_NAME = "intField";
@@ -3045,6 +3158,8 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		Date dateLongField;
 		@DatabaseField(columnName = DATE_STRING_FIELD_NAME, dataType = DataType.DATE_STRING, format = DEFAULT_DATE_STRING_FORMAT)
 		Date dateStringField;
+		@DatabaseField(columnName = CHAR_FIELD_NAME)
+		char charField;
 		@DatabaseField(columnName = BYTE_FIELD_NAME)
 		byte byteField;
 		@DatabaseField(columnName = SHORT_FIELD_NAME)
@@ -3183,7 +3298,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	}
 
 	// for testing reserved table names as fields
-	private static class Where {
+	private static class Create {
 		@DatabaseField(id = true)
 		public String id;
 	}
