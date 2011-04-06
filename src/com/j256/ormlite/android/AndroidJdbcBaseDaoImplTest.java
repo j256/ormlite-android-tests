@@ -1093,7 +1093,6 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	/**
 	 * This is special because comparing floats may not work as expected.
 	 */
-
 	public void testAllTypesFloat() throws Exception {
 		Dao<AllTypes, Integer> allDao = createDao(AllTypes.class, true);
 		AllTypes allTypes = new AllTypes();
@@ -2762,7 +2761,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(1, dao.create(foo));
 
 		Where<Foo, Integer> where = dao.queryBuilder().where();
-		where.andMany(where.eq(Foo.VAL_FIELD_NAME, val), where.eq(Foo.ID_FIELD_NAME, id));
+		where.and(where.eq(Foo.VAL_FIELD_NAME, val), where.eq(Foo.ID_FIELD_NAME, id));
 
 		List<Foo> results = where.query();
 		assertEquals(1, results.size());
@@ -2770,8 +2769,39 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 		// this should match none
 		where.clear();
-		where.andMany(where.eq(Foo.VAL_FIELD_NAME, val), where.eq(Foo.ID_FIELD_NAME, id),
+		where.and(where.eq(Foo.VAL_FIELD_NAME, val), where.eq(Foo.ID_FIELD_NAME, id),
 				where.eq(Foo.ID_FIELD_NAME, notId));
+		results = where.query();
+		assertEquals(0, results.size());
+	}
+
+	public void testUseOfAndInt() throws Exception {
+		Dao<Foo, Integer> dao = createDao(Foo.class, true);
+		assertEquals(0, dao.countOf());
+		Foo foo = new Foo();
+		int id = 1;
+		foo.id = id;
+		int val = 1231231;
+		foo.val = val;
+		assertEquals(1, dao.create(foo));
+		int notId = id + 1;
+		foo.id = notId;
+		foo.val = val + 1;
+		assertEquals(1, dao.create(foo));
+
+		Where<Foo, Integer> where = dao.queryBuilder().where();
+		where.and(where.eq(Foo.VAL_FIELD_NAME, val), where.eq(Foo.ID_FIELD_NAME, id));
+
+		List<Foo> results = where.query();
+		assertEquals(1, results.size());
+		assertEquals(id, results.get(0).id);
+
+		// this should match none
+		where.clear();
+		where.eq(Foo.VAL_FIELD_NAME, val);
+		where.eq(Foo.ID_FIELD_NAME, id);
+		where.eq(Foo.ID_FIELD_NAME, notId);
+		where.and(3);
 		results = where.query();
 		assertEquals(0, results.size());
 	}
@@ -2792,8 +2822,35 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(1, dao.create(foo));
 
 		Where<Foo, Integer> where = dao.queryBuilder().where();
-		where.orMany(where.eq(Foo.ID_FIELD_NAME, id), where.eq(Foo.ID_FIELD_NAME, notId),
+		where.or(where.eq(Foo.ID_FIELD_NAME, id), where.eq(Foo.ID_FIELD_NAME, notId),
 				where.eq(Foo.VAL_FIELD_NAME, val + 1), where.eq(Foo.VAL_FIELD_NAME, val + 1));
+
+		List<Foo> results = where.query();
+		assertEquals(2, results.size());
+		assertEquals(id, results.get(0).id);
+		assertEquals(notId, results.get(1).id);
+	}
+
+	public void testUseOfOrInt() throws Exception {
+		Dao<Foo, Integer> dao = createDao(Foo.class, true);
+		assertEquals(0, dao.countOf());
+		Foo foo = new Foo();
+		int id = 1;
+		foo.id = id;
+		int val = 1231231;
+		foo.val = val;
+		assertEquals(1, dao.create(foo));
+		int notId = id + 1;
+		foo.id = notId;
+		foo.val = val + 1;
+		assertEquals(1, dao.create(foo));
+
+		Where<Foo, Integer> where = dao.queryBuilder().where();
+		where.eq(Foo.ID_FIELD_NAME, id);
+		where.eq(Foo.ID_FIELD_NAME, notId);
+		where.eq(Foo.VAL_FIELD_NAME, val + 1);
+		where.eq(Foo.VAL_FIELD_NAME, val + 1);
+		where.or(4);
 
 		List<Foo> results = where.query();
 		assertEquals(2, results.size());
