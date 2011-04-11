@@ -453,7 +453,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertEquals(lastX, itemC);
 	}
 
-	private class InsertCallable implements Callable<Void> {
+	private static class InsertCallable implements Callable<Void> {
 		private int numItems;
 		private Dao<Foo, Integer> fooDao;
 		public InsertCallable(int numItems, Dao<Foo, Integer> fooDao) {
@@ -1093,6 +1093,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	/**
 	 * This is special because comparing floats may not work as expected.
 	 */
+
 	public void testAllTypesFloat() throws Exception {
 		Dao<AllTypes, Integer> allDao = createDao(AllTypes.class, true);
 		AllTypes allTypes = new AllTypes();
