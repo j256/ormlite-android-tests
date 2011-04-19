@@ -52,7 +52,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	private DatabaseType databaseType = new SqliteAndroidDatabaseType();
 	private ConnectionSource connectionSource;
-	private OrmDatabaseHelper helper;
+	private DatabaseHelper helper;
 
 	private Set<DatabaseTableConfig<?>> dropClassSet = new HashSet<DatabaseTableConfig<?>>();
 
@@ -63,7 +63,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
-		helper = new OrmDatabaseHelper(getContext());
+		helper = new DatabaseHelper(getContext());
 		connectionSource = helper.getConnectionSource();
 	}
 

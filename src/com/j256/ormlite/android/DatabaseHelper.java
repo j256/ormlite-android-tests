@@ -7,7 +7,7 @@ import android.util.Log;
 import com.j256.ormlite.android.apptools.OrmLiteSqliteOpenHelper;
 import com.j256.ormlite.support.ConnectionSource;
 
-public class OrmDatabaseHelper extends OrmLiteSqliteOpenHelper {
+public class DatabaseHelper extends OrmLiteSqliteOpenHelper {
 
 	/**
 	 * The name of the database for our application.
@@ -18,19 +18,19 @@ public class OrmDatabaseHelper extends OrmLiteSqliteOpenHelper {
 	 */
 	private static final int DATABASE_VERSION = 1;
 
-	OrmDatabaseHelper(Context context) {
+	DatabaseHelper(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
 	}
 
 	@Override
 	public void onCreate(SQLiteDatabase database, ConnectionSource cs) {
-		Log.i(OrmDatabaseHelper.class.getName(), "onCreate");
+		Log.i(DatabaseHelper.class.getName(), "onCreate");
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase database, ConnectionSource cs, int oldVersion, int newVersion) {
-		Log.i(OrmDatabaseHelper.class.getName(), "onUpgrade from version " + oldVersion + " to version " + newVersion);
-		onCreate(database);
+		Log.i(DatabaseHelper.class.getName(), "onUpgrade from version " + oldVersion + " to version " + newVersion);
+		onCreate(database, cs);
 	}
 
 	@Override

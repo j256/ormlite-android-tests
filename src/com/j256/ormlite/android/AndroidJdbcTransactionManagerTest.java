@@ -18,14 +18,14 @@ import com.j256.ormlite.table.TableUtils;
 public class AndroidJdbcTransactionManagerTest extends AndroidTestCase {
 
 	private ConnectionSource connectionSource;
-	private OrmDatabaseHelper helper;
+	private DatabaseHelper helper;
 
 	private Set<DatabaseTableConfig<?>> dropClassSet = new HashSet<DatabaseTableConfig<?>>();
 
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
-		helper = new OrmDatabaseHelper(getContext());
+		helper = new DatabaseHelper(getContext());
 		connectionSource = helper.getConnectionSource();
 	}
 
