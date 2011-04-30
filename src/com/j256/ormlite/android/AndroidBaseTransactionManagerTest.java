@@ -2,6 +2,7 @@ package com.j256.ormlite.android;
 
 import java.sql.SQLException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -9,16 +10,19 @@ import android.test.AndroidTestCase;
 
 import com.j256.ormlite.dao.BaseDaoImpl;
 import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.db.DatabaseType;
+import com.j256.ormlite.db.SqliteAndroidDatabaseType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.misc.TransactionManager;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.DatabaseTableConfig;
 import com.j256.ormlite.table.TableUtils;
 
-public class AndroidJdbcTransactionManagerTest extends AndroidTestCase {
+public class AndroidBaseTransactionManagerTest extends AndroidTestCase {
 
 	private ConnectionSource connectionSource;
 	private DatabaseHelper helper;
+	private DatabaseType databaseType = new SqliteAndroidDatabaseType();
 
 	private Set<DatabaseTableConfig<?>> dropClassSet = new HashSet<DatabaseTableConfig<?>>();
 
@@ -85,7 +89,7 @@ public class AndroidJdbcTransactionManagerTest extends AndroidTestCase {
 
 	/*
 	 * ==============================================================================================================
-	 * Insert the JdbcTransactionManagerTest below
+	 * Insert the BaseTransactionManagerTest below
 	 * ==============================================================================================================
 	 */
 
@@ -95,7 +99,7 @@ public class AndroidJdbcTransactionManagerTest extends AndroidTestCase {
 		}
 		TransactionManager mgr = new TransactionManager(connectionSource);
 		final Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
-		testTransactionManager(mgr, null, fooDao);
+		testTransactionManager(mgr, null, fooDao, false);
 	}
 
 	public void testRollBack() throws Exception {
@@ -104,7 +108,7 @@ public class AndroidJdbcTransactionManagerTest extends AndroidTestCase {
 		}
 		TransactionManager mgr = new TransactionManager(connectionSource);
 		final Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
-		testTransactionManager(mgr, new RuntimeException("What!!  I protest!!"), fooDao);
+		testTransactionManager(mgr, new RuntimeException("What!!  I protest!!"), fooDao, false);
 	}
 
 	public void testSpringWiredRollBack() throws Exception {
@@ -115,7 +119,7 @@ public class AndroidJdbcTransactionManagerTest extends AndroidTestCase {
 		mgr.setConnectionSource(connectionSource);
 		mgr.initialize();
 		final Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
-		testTransactionManager(mgr, new RuntimeException("What!!  I protest!!"), fooDao);
+		testTransactionManager(mgr, new RuntimeException("What!!  I protest!!"), fooDao, false);
 	}
 
 	public void testNonRuntimeExceptionWiredRollBack() throws Exception {
@@ -126,7 +130,7 @@ public class AndroidJdbcTransactionManagerTest extends AndroidTestCase {
 		mgr.setConnectionSource(connectionSource);
 		mgr.initialize();
 		final Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
-		testTransactionManager(mgr, new Exception("What!!  I protest via an Exception!!"), fooDao);
+		testTransactionManager(mgr, new Exception("What!!  I protest via an Exception!!"), fooDao, false);
 	}
 
 	public void testTransactionWithinTransaction() throws Exception {
@@ -137,18 +141,78 @@ public class AndroidJdbcTransactionManagerTest extends AndroidTestCase {
 		final Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		mgr.callInTransaction(new Callable<Void>() {
 			public Void call() throws Exception {
-				testTransactionManager(mgr, null, fooDao);
+				testTransactionManager(mgr, null, fooDao, true);
 				return null;
 			}
 		});
 	}
 
+	public void testTransactionWithinTransactionThrows() throws Exception {
+		if (connectionSource == null || !databaseType.isNestedSavePointsSupported()) {
+			return;
+		}
+		final TransactionManager mgr = new TransactionManager(connectionSource);
+		final Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
+		final Foo outerFoo = new Foo();
+		String stuff = "outer stuff";
+		outerFoo.stuff = stuff;
+		assertEquals(1, fooDao.create(outerFoo));
+		assertNotNull(fooDao.queryForId(outerFoo.id));
+		assertEquals(1, fooDao.queryForAll().size());
+		mgr.callInTransaction(new Callable<Void>() {
+			public Void call() throws Exception {
+				assertEquals(1, fooDao.delete(outerFoo));
+				assertNull(fooDao.queryForId(outerFoo.id));
+				assertEquals(0, fooDao.queryForAll().size());
+				testTransactionManager(mgr, new Exception("The inner transaction should throw and get rolled back"),
+						fooDao, true);
+				return null;
+			}
+		});
+		List<Foo> fooList = fooDao.queryForAll();
+		assertEquals(1, fooList.size());
+		assertNull(fooDao.queryForId(outerFoo.id));
+		// however we should have deleted the outer foo and are left with the inner foo
+		assertTrue(fooList.get(0).id != outerFoo.id);
+	}
+
+	public void testNestedTransactionsNotSupported() throws Exception {
+		if (connectionSource == null || databaseType.isNestedSavePointsSupported()) {
+			return;
+		}
+		final TransactionManager mgr = new TransactionManager(connectionSource);
+		final Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
+		final Foo outerFoo = new Foo();
+		String stuff = "outer stuff";
+		outerFoo.stuff = stuff;
+		assertEquals(1, fooDao.create(outerFoo));
+		assertNotNull(fooDao.queryForId(outerFoo.id));
+		assertEquals(1, fooDao.queryForAll().size());
+		mgr.callInTransaction(new Callable<Void>() {
+			public Void call() throws Exception {
+				assertEquals(1, fooDao.delete(outerFoo));
+				assertNull(fooDao.queryForId(outerFoo.id));
+				assertEquals(0, fooDao.queryForAll().size());
+				testTransactionManager(mgr, new Exception("The inner transaction should throw and get rolled back"),
+						fooDao, true);
+				return null;
+			}
+		});
+		List<Foo> fooList = fooDao.queryForAll();
+		/*
+		 * The inner transaction throws an exception but we don't want the inner transaction rolled back since an
+		 * exception is caught there.
+		 */
+		assertEquals(0, fooList.size());
+	}
+
 	private void testTransactionManager(TransactionManager mgr, final Exception exception,
-			final Dao<Foo, Integer> fooDao) throws Exception {
+			final Dao<Foo, Integer> fooDao, boolean inner) throws Exception {
 		final Foo foo1 = new Foo();
 		String stuff = "stuff";
 		foo1.stuff = stuff;
 		assertEquals(1, fooDao.create(foo1));
+		assertNotNull(fooDao.queryForId(foo1.id));
 		try {
 			final int val = 13431231;
 			int returned = mgr.callInTransaction(new Callable<Integer>() {
@@ -182,10 +246,14 @@ public class AndroidJdbcTransactionManagerTest extends AndroidTestCase {
 			// still doesn't find it after we delete it
 			assertNull(fooDao.queryForId(foo1.id));
 		} else {
-			// still finds it after we delete it
+			// still finds it after we delete it since we threw inside of transaction
 			Foo foo2 = fooDao.queryForId(foo1.id);
-			assertNotNull(foo2);
-			assertEquals(stuff, foo2.stuff);
+			if (databaseType.isNestedSavePointsSupported() || (!inner)) {
+				assertNotNull(foo2);
+				assertEquals(stuff, foo2.stuff);
+			} else {
+				assertNull(foo2);
+			}
 		}
 	}
 
