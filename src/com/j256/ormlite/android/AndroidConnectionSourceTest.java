@@ -38,8 +38,6 @@ public class AndroidConnectionSourceTest extends AndroidTestCase {
 
 	public void testIsOpen() throws Exception {
 		AndroidConnectionSource sds = new AndroidConnectionSource(getHelper());
-		// no get connection yet
-		assertFalse(sds.isOpen());
 		sds.releaseConnection(sds.getReadOnlyConnection());
 		assertTrue(sds.isOpen());
 		sds.close();
