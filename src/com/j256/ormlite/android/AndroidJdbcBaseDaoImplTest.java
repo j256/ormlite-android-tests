@@ -50,12 +50,14 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	private final static boolean CLOSE_IS_NOOP = true;
 	private final static boolean UPDATE_ROWS_RETURNS_ONE = true;
+	private static final String DATASOURCE_ERROR = "Property 'dataSource' is required";
 
 	private DatabaseType databaseType = new SqliteAndroidDatabaseType();
 	private ConnectionSource connectionSource;
 	private DatabaseHelper helper;
 
-	private Set<DatabaseTableConfig<?>> dropClassSet = new HashSet<DatabaseTableConfig<?>>();
+	private Set<Class<?>> dropClassSet = new HashSet<Class<?>>();
+	private Set<DatabaseTableConfig<?>> dropTableConfigSet = new HashSet<DatabaseTableConfig<?>>();
 
 	protected boolean isTableExistsWorks() {
 		return false;
@@ -77,9 +79,12 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
-	protected void closeConnection() throws Exception {
+	private void closeConnectionSource() throws Exception {
 		if (connectionSource != null) {
-			for (DatabaseTableConfig<?> tableConfig : dropClassSet) {
+			for (Class<?> clazz : dropClassSet) {
+				dropTable(clazz, true);
+			}
+			for (DatabaseTableConfig<?> tableConfig : dropTableConfigSet) {
 				dropTable(tableConfig, true);
 			}
 			connectionSource.close();
@@ -88,22 +93,38 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		databaseType = null;
 	}
 
-	private <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
-		return createDao(DatabaseTableConfig.fromClass(connectionSource, clazz), createTable);
+	protected <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
+		if (connectionSource == null) {
+			throw new SQLException(DATASOURCE_ERROR);
+		}
+		@SuppressWarnings("unchecked")
+		BaseDaoImpl<T, ID> dao = (BaseDaoImpl<T, ID>) DaoManager.createDao(connectionSource, clazz);
+		return configDao(dao, createTable);
 	}
 
-	private <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
-		BaseDaoImpl<T, ID> dao = new BaseDaoImpl<T, ID>(connectionSource, tableConfig) {
-		};
-		return configDao(tableConfig, createTable, dao);
+	protected <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
+		if (connectionSource == null) {
+			throw new SQLException(DATASOURCE_ERROR);
+		}
+		@SuppressWarnings("unchecked")
+		BaseDaoImpl<T, ID> dao = (BaseDaoImpl<T, ID>) DaoManager.createDao(connectionSource, tableConfig);
+		return configDao(dao, createTable);
 	}
 
-	private <T> void createTable(Class<T> clazz, boolean dropAtEnd) throws Exception {
-		DatabaseTableConfig<T> tableConfig = DatabaseTableConfig.fromClass(connectionSource, clazz);
-		createTable(tableConfig, dropAtEnd);
+	protected <T> void createTable(Class<T> clazz, boolean dropAtEnd) throws Exception {
+		try {
+			// first we drop it in case it existed before
+			dropTable(clazz, true);
+		} catch (SQLException ignored) {
+			// ignore any errors about missing tables
+		}
+		TableUtils.createTable(connectionSource, clazz);
+		if (dropAtEnd) {
+			dropClassSet.add(clazz);
+		}
 	}
 
-	private <T> void createTable(DatabaseTableConfig<T> tableConfig, boolean dropAtEnd) throws Exception {
+	protected <T> void createTable(DatabaseTableConfig<T> tableConfig, boolean dropAtEnd) throws Exception {
 		try {
 			// first we drop it in case it existed before
 			dropTable(tableConfig, true);
@@ -112,37 +133,34 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 		TableUtils.createTable(connectionSource, tableConfig);
 		if (dropAtEnd) {
-			dropClassSet.add(tableConfig);
+			dropTableConfigSet.add(tableConfig);
 		}
 	}
 
-	private <T> void dropTable(DatabaseTableConfig<T> tableConfig, boolean ignoreErrors) throws Exception {
+	protected <T> void dropTable(Class<T> clazz, boolean ignoreErrors) throws Exception {
+		// drop the table and ignore any errors along the way
+		TableUtils.dropTable(connectionSource, clazz, ignoreErrors);
+	}
+
+	protected <T> void dropTable(DatabaseTableConfig<T> tableConfig, boolean ignoreErrors) throws Exception {
 		// drop the table and ignore any errors along the way
 		TableUtils.dropTable(connectionSource, tableConfig, ignoreErrors);
 	}
 
-	private <T, ID> Dao<T, ID> configDao(DatabaseTableConfig<T> tableConfig, boolean createTable, BaseDaoImpl<T, ID> dao)
-			throws Exception {
+	private <T, ID> Dao<T, ID> configDao(BaseDaoImpl<T, ID> dao, boolean createTable) throws Exception {
 		if (connectionSource == null) {
-			throw new SQLException("no connection source configured");
+			throw new SQLException(DATASOURCE_ERROR);
 		}
 		dao.setConnectionSource(connectionSource);
 		if (createTable) {
+			DatabaseTableConfig<T> tableConfig = dao.getTableConfig();
+			if (tableConfig == null) {
+				tableConfig = DatabaseTableConfig.fromClass(connectionSource, dao.getDataClass());
+			}
 			createTable(tableConfig, true);
 		}
 		dao.initialize();
 		return dao;
-	}
-
-	private void closeConnectionSource() throws Exception {
-		if (connectionSource != null) {
-			for (DatabaseTableConfig<?> tableConfig : dropClassSet) {
-				dropTable(tableConfig, true);
-			}
-			connectionSource.close();
-			connectionSource = null;
-		}
-		databaseType = null;
 	}
 
 	/*
@@ -373,7 +391,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		Foo foo1 = new Foo();
 		foo1.stuff = "s1";
 		fooDao.create(foo1);
-		Iterator<Foo> iterator = fooDao.iterator();
+		CloseableIterator<Foo> iterator = fooDao.iterator();
 		try {
 			while (iterator.hasNext()) {
 				closeConnectionSource();
@@ -384,6 +402,8 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 			}
 		} catch (IllegalStateException e) {
 			// expected
+		} finally {
+			iterator.close();
 		}
 	}
 
@@ -392,7 +412,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		Foo foo1 = new Foo();
 		foo1.stuff = "s1";
 		fooDao.create(foo1);
-		Iterator<Foo> iterator = fooDao.iterator();
+		CloseableIterator<Foo> iterator = fooDao.iterator();
 		try {
 			while (iterator.hasNext()) {
 				iterator.next();
@@ -410,12 +430,14 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		Foo foo1 = new Foo();
 		foo1.stuff = "s1";
 		fooDao.create(foo1);
-		Iterator<Foo> iterator = fooDao.iterator();
+		CloseableIterator<Foo> iterator = fooDao.iterator();
 		try {
 			iterator.remove();
 			fail("expected exception");
 		} catch (IllegalStateException e) {
 			// expected
+		} finally {
+			iterator.close();
 		}
 	}
 
