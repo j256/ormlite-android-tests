@@ -206,7 +206,7 @@ public class AndroidBaseTransactionManagerTest extends AndroidTestCase {
 		assertEquals(0, fooList.size());
 	}
 
-	private void testTransactionManager(TransactionManager mgr, final Exception exception,
+	protected void testTransactionManager(TransactionManager mgr, final Exception exception,
 			final Dao<Foo, Integer> fooDao, boolean inner) throws Exception {
 		final Foo foo1 = new Foo();
 		String stuff = "stuff";

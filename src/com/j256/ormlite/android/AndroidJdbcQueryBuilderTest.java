@@ -102,6 +102,7 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 	private Foo foo1;
 	private Foo foo2;
 
+	@SuppressWarnings("unchecked")
 	public void testAnd() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
 		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
@@ -129,6 +130,7 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 		assertEquals(foo1, results.get(0));
 	}
 
+	@SuppressWarnings("unchecked")
 	public void testOr() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
 		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
@@ -200,6 +202,8 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 			fail("expected exception");
 		} catch (SQLException e) {
 			// expected
+			System.err.println("Expected: " + e);
+			e.printStackTrace();
 		}
 	}
 
@@ -292,6 +296,7 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public void testNotNotComparison() throws Exception {
 		Dao<Foo, String> fooDao = createTestData();
 		QueryBuilder<Foo, String> qb = fooDao.queryBuilder();
