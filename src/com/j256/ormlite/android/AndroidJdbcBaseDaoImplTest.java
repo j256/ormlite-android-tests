@@ -23,6 +23,7 @@ import android.test.AndroidTestCase;
 import com.j256.ormlite.dao.BaseDaoImpl;
 import com.j256.ormlite.dao.CloseableIterator;
 import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.Dao.CreateOrUpdateStatus;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.dao.GenericRawResults;
 import com.j256.ormlite.dao.RawRowMapper;
@@ -2952,6 +2953,50 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertFalse(foo3.id == foo2.id);
 	}
 
+	public void testCreateOrUpdate() throws Exception {
+		Dao<NotQuiteFoo, Integer> dao = createDao(NotQuiteFoo.class, true);
+		NotQuiteFoo foo1 = new NotQuiteFoo();
+		foo1.stuff = "wow";
+		CreateOrUpdateStatus status = dao.createOrUpdate(foo1);
+		assertTrue(status.isCreated());
+		assertFalse(status.isUpdated());
+		assertEquals(1, status.getNumLinesChanged());
+
+		String stuff2 = "4134132";
+		foo1.stuff = stuff2;
+		status = dao.createOrUpdate(foo1);
+		assertFalse(status.isCreated());
+		assertTrue(status.isUpdated());
+		assertEquals(1, status.getNumLinesChanged());
+
+		NotQuiteFoo result = dao.queryForId(foo1.id);
+		assertEquals(stuff2, result.stuff);
+	}
+
+	public void testCreateOrUpdateNull() throws Exception {
+		Dao<Foo, String> dao = createDao(Foo.class, true);
+		CreateOrUpdateStatus status = dao.createOrUpdate(null);
+		assertFalse(status.isCreated());
+		assertFalse(status.isUpdated());
+		assertEquals(0, status.getNumLinesChanged());
+	}
+
+	public void testCreateOrUpdateNullId() throws Exception {
+		Dao<CreateOrUpdateObjectId, Integer> dao = createDao(CreateOrUpdateObjectId.class, true);
+		CreateOrUpdateObjectId foo = new CreateOrUpdateObjectId();
+		String stuff = "21313";
+		foo.stuff = stuff;
+		CreateOrUpdateStatus status = dao.createOrUpdate(foo);
+		assertTrue(status.isCreated());
+		assertFalse(status.isUpdated());
+		assertEquals(1, status.getNumLinesChanged());
+
+		CreateOrUpdateObjectId result = dao.queryForId(foo.id);
+		assertNotNull(result);
+		assertEquals(stuff, result.stuff);
+
+	}
+
 	/* ==================================================================================== */
 
 	private <T extends TestableType<ID>, ID> void checkTypeAsId(Class<T> clazz, ID id1, ID id2) throws Exception {
@@ -4273,5 +4318,14 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 		@DatabaseField
 		String stuff;
+	}
+
+	protected static class CreateOrUpdateObjectId {
+		@DatabaseField(generatedId = true)
+		public Integer id;
+		@DatabaseField
+		public String stuff;
+		public CreateOrUpdateObjectId() {
+		}
 	}
 }
