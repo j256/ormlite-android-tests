@@ -334,7 +334,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 	public void testCreateNull() throws Exception {
 		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
-		assertEquals(0, fooDao.create(null));
+		assertEquals(0, fooDao.create((Foo) null));
 	}
 
 	public void testUpdateNull() throws Exception {
@@ -2995,6 +2995,38 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertNotNull(result);
 		assertEquals(stuff, result.stuff);
 
+		String stuff2 = "pwojgfwe";
+		foo.stuff = stuff2;
+		dao.createOrUpdate(foo);
+
+		result = dao.queryForId(foo.id);
+		assertNotNull(result);
+		assertEquals(stuff2, result.stuff);
+	}
+
+	public void testUpdateNoChange() throws Exception {
+		Dao<Foo, String> dao = createDao(Foo.class, true);
+		Foo foo = new Foo();
+		foo.id = 13567567;
+		foo.val = 1232131;
+		assertEquals(1, dao.create(foo));
+		assertEquals(1, dao.update(foo));
+		assertEquals(1, dao.update(foo));
+	}
+
+	public void testNullForeign() throws Exception {
+		Dao<Order, Integer> orderDao = createDao(Order.class, true);
+
+		int NUM_ORDERS = 10;
+		for (int orderC = 0; orderC < NUM_ORDERS; orderC++) {
+			Order order = new Order();
+			order.val = orderC;
+			assertEquals(1, orderDao.create(order));
+		}
+
+		List<Order> results = orderDao.queryBuilder().where().isNull(Order.ONE_FIELD_NAME).query();
+		assertNotNull(results);
+		assertEquals(NUM_ORDERS, results.size());
 	}
 
 	/* ==================================================================================== */
@@ -4326,6 +4358,18 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		@DatabaseField
 		public String stuff;
 		public CreateOrUpdateObjectId() {
+		}
+	}
+
+	protected static class Order {
+		public static final String ONE_FIELD_NAME = "one_id";
+		@DatabaseField(generatedId = true)
+		int id;
+		@DatabaseField(unique = true)
+		int val;
+		@DatabaseField(foreign = true, columnName = ONE_FIELD_NAME)
+		One one;
+		protected Order() {
 		}
 	}
 }
