@@ -58,24 +58,24 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	private Set<Class<?>> dropClassSet = new HashSet<Class<?>>();
 	private Set<DatabaseTableConfig<?>> dropTableConfigSet = new HashSet<DatabaseTableConfig<?>>();
 
-	protected boolean isTableExistsWorks() {
-		return false;
-	}
-
 	@Override
-	protected void setUp() throws Exception {
+	public void setUp() throws Exception {
 		super.setUp();
 		helper = new DatabaseHelper(getContext());
 		connectionSource = helper.getConnectionSource();
 	}
 
 	@Override
-	protected void tearDown() throws Exception {
+	public void tearDown() throws Exception {
 		super.tearDown();
 		closeConnectionSource();
 		if (helper != null) {
 			helper.close();
 		}
+	}
+
+	private boolean isTableExistsWorks() {
+		return false;
 	}
 
 	private void closeConnectionSource() throws Exception {
@@ -92,7 +92,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		databaseType = null;
 	}
 
-	protected <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
+	private <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
 		if (connectionSource == null) {
 			throw new SQLException(DATASOURCE_ERROR);
 		}
@@ -101,7 +101,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		return configDao(dao, createTable);
 	}
 
-	protected <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
+	private <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
 		if (connectionSource == null) {
 			throw new SQLException(DATASOURCE_ERROR);
 		}
@@ -110,7 +110,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		return configDao(dao, createTable);
 	}
 
-	protected <T> void createTable(Class<T> clazz, boolean dropAtEnd) throws Exception {
+	private <T> void createTable(Class<T> clazz, boolean dropAtEnd) throws Exception {
 		try {
 			// first we drop it in case it existed before
 			dropTable(clazz, true);
@@ -123,7 +123,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
-	protected <T> void createTable(DatabaseTableConfig<T> tableConfig, boolean dropAtEnd) throws Exception {
+	private <T> void createTable(DatabaseTableConfig<T> tableConfig, boolean dropAtEnd) throws Exception {
 		try {
 			// first we drop it in case it existed before
 			dropTable(tableConfig, true);
@@ -136,12 +136,12 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		}
 	}
 
-	protected <T> void dropTable(Class<T> clazz, boolean ignoreErrors) throws Exception {
+	private <T> void dropTable(Class<T> clazz, boolean ignoreErrors) throws Exception {
 		// drop the table and ignore any errors along the way
 		TableUtils.dropTable(connectionSource, clazz, ignoreErrors);
 	}
 
-	protected <T> void dropTable(DatabaseTableConfig<T> tableConfig, boolean ignoreErrors) throws Exception {
+	private <T> void dropTable(DatabaseTableConfig<T> tableConfig, boolean ignoreErrors) throws Exception {
 		// drop the table and ignore any errors along the way
 		TableUtils.dropTable(connectionSource, tableConfig, ignoreErrors);
 	}
