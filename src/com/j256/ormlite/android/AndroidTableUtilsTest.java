@@ -1,5 +1,6 @@
 package com.j256.ormlite.android;
 
+import java.lang.reflect.Constructor;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
@@ -104,17 +105,18 @@ public class AndroidTableUtilsTest extends AndroidTestCase {
 
 	/*
 	 * ==============================================================================================================
-	 * Insert the JdbcStatementBuilderTest.java below
-	 * ==============================================================================================================
 	 */
 
+	public void testConstructor() throws Exception {
+		@SuppressWarnings("rawtypes")
+		Constructor[] constructors = TableUtils.class.getDeclaredConstructors();
+		assertEquals(1, constructors.length);
+		constructors[0].setAccessible(true);
+		constructors[0].newInstance();
+	}
+
 	public void testMissingCreate() throws Exception {
-		if (connectionSource == null) {
-			throw new SQLException("Simulate a failure");
-		}
-		// we needed to do this because of some race conditions around table clearing
-		dropTable(Foo.class, true);
-		Dao<Foo, Integer> fooDao = createDao(Foo.class, false);
+		Dao<LocalFoo, Integer> fooDao = createDao(LocalFoo.class, false);
 		try {
 			fooDao.queryForAll();
 			fail("Should have thrown");
@@ -124,30 +126,29 @@ public class AndroidTableUtilsTest extends AndroidTestCase {
 	}
 
 	public void testCreateTable() throws Exception {
-		Dao<Foo, Integer> fooDao = createDao(Foo.class, false);
+		Dao<LocalFoo, Integer> fooDao = createDao(LocalFoo.class, false);
 		// first we create the table
-		createTable(Foo.class, false);
+		createTable(LocalFoo.class, false);
 		// test it out
 		assertEquals(0, fooDao.queryForAll().size());
 		// now we drop it
-		dropTable(Foo.class, true);
+		dropTable(LocalFoo.class, true);
 		try {
-			// query should fail
-			fooDao.queryForAll();
+			fooDao.countOf();
 			fail("Was expecting a SQL exception");
 		} catch (Exception expected) {
 			// expected
 		}
 		// now create it again
-		createTable(Foo.class, false);
+		createTable(LocalFoo.class, false);
 		assertEquals(0, fooDao.queryForAll().size());
-		dropTable(Foo.class, true);
+		dropTable(LocalFoo.class, true);
 	}
 
 	public void testDropThenQuery() throws Exception {
-		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
+		Dao<LocalFoo, Integer> fooDao = createDao(LocalFoo.class, true);
 		assertEquals(0, fooDao.queryForAll().size());
-		dropTable(Foo.class, true);
+		dropTable(LocalFoo.class, true);
 		try {
 			fooDao.queryForAll();
 			fail("Should have thrown");
@@ -157,13 +158,13 @@ public class AndroidTableUtilsTest extends AndroidTestCase {
 	}
 
 	public void testRawExecuteDropThenQuery() throws Exception {
-		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
+		Dao<LocalFoo, Integer> fooDao = createDao(LocalFoo.class, true);
 		StringBuilder sb = new StringBuilder();
 		sb.append("DROP TABLE ");
 		if (databaseType.isEntityNamesMustBeUpCase()) {
-			databaseType.appendEscapedEntityName(sb, "FOO");
+			databaseType.appendEscapedEntityName(sb, "LOCALFOO");
 		} else {
-			databaseType.appendEscapedEntityName(sb, "foo");
+			databaseType.appendEscapedEntityName(sb, "LocalFoo");
 		}
 		// can't check the return value because of sql-server
 		fooDao.executeRaw(sb.toString());
@@ -176,16 +177,16 @@ public class AndroidTableUtilsTest extends AndroidTestCase {
 	}
 
 	public void testDoubleDrop() throws Exception {
-		Dao<Foo, Integer> fooDao = createDao(Foo.class, false);
+		Dao<LocalFoo, Integer> fooDao = createDao(LocalFoo.class, false);
 		// first we create the table
-		createTable(Foo.class, false);
+		createTable(LocalFoo.class, false);
 		// test it out
 		assertEquals(0, fooDao.queryForAll().size());
 		// now we drop it
-		dropTable(Foo.class, true);
-		// this should fail
+		dropTable(LocalFoo.class, true);
 		try {
-			dropTable(Foo.class, false);
+			// this should fail
+			dropTable(LocalFoo.class, false);
 			fail("Should have thrown");
 		} catch (SQLException e) {
 			// expected
@@ -193,28 +194,41 @@ public class AndroidTableUtilsTest extends AndroidTestCase {
 	}
 
 	public void testClearTable() throws Exception {
-		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
+		Dao<LocalFoo, Integer> fooDao = createDao(LocalFoo.class, true);
 		assertEquals(0, fooDao.countOf());
-		Foo foo = new Foo();
+		LocalFoo foo = new LocalFoo();
 		assertEquals(1, fooDao.create(foo));
 		assertEquals(1, fooDao.countOf());
-		TableUtils.clearTable(connectionSource, Foo.class);
+		TableUtils.clearTable(connectionSource, LocalFoo.class);
 		assertEquals(0, fooDao.countOf());
 	}
 
-	public void testCreateTableConfigIfNotExists() throws Exception {
-		if (databaseType == null || !databaseType.isCreateIfNotExistsSupported()) {
-			return;
-		}
-		TableUtils.dropTable(connectionSource, Foo.class, true);
-		Dao<Foo, Integer> fooDao = createDao(Foo.class, false);
+	public void testCreateTableIfNotExists() throws Exception {
+		dropTable(LocalFoo.class, true);
+		Dao<LocalFoo, Integer> fooDao = createDao(LocalFoo.class, false);
 		try {
 			fooDao.countOf();
 			fail("Should have thrown an exception");
 		} catch (Exception e) {
 			// ignored
 		}
-		DatabaseTableConfig<Foo> tableConfig = DatabaseTableConfig.fromClass(connectionSource, Foo.class);
+		TableUtils.createTableIfNotExists(connectionSource, LocalFoo.class);
+		assertEquals(0, fooDao.countOf());
+		// should not throw
+		TableUtils.createTableIfNotExists(connectionSource, LocalFoo.class);
+		assertEquals(0, fooDao.countOf());
+	}
+
+	public void testCreateTableConfigIfNotExists() throws Exception {
+		dropTable(LocalFoo.class, true);
+		Dao<LocalFoo, Integer> fooDao = createDao(LocalFoo.class, false);
+		try {
+			fooDao.countOf();
+			fail("Should have thrown an exception");
+		} catch (Exception e) {
+			// ignored
+		}
+		DatabaseTableConfig<LocalFoo> tableConfig = DatabaseTableConfig.fromClass(connectionSource, LocalFoo.class);
 		TableUtils.createTableIfNotExists(connectionSource, tableConfig);
 		assertEquals(0, fooDao.countOf());
 		// should not throw
@@ -222,10 +236,31 @@ public class AndroidTableUtilsTest extends AndroidTestCase {
 		assertEquals(0, fooDao.countOf());
 	}
 
-	protected static class Foo {
-		@DatabaseField(generatedId = true)
+	/* ================================================================ */
+
+	protected static class LocalFoo {
+		public static final String ID_FIELD_NAME = "id";
+		public static final String NAME_FIELD_NAME = "name";
+		@DatabaseField(columnName = ID_FIELD_NAME)
 		int id;
-		@DatabaseField
+		@DatabaseField(columnName = NAME_FIELD_NAME)
 		String name;
+	}
+
+	protected static class Index {
+		@DatabaseField(index = true)
+		String stuff;
+		public Index() {
+		}
+	}
+
+	protected static class ComboIndex {
+		@DatabaseField(indexName = INDEX_NAME)
+		String stuff;
+		@DatabaseField(indexName = INDEX_NAME)
+		long junk;
+		public ComboIndex() {
+		}
+		public static final String INDEX_NAME = "stuffjunk";
 	}
 }

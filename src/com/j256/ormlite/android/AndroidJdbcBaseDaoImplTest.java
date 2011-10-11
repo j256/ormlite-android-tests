@@ -171,7 +171,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	private final static String DEFAULT_VALUE_STRING = "1314199";
 	private final static int DEFAULT_VALUE = Integer.parseInt(DEFAULT_VALUE_STRING);
 	private final static int ALL_TYPES_STRING_WIDTH = 4;
-	private final static String FOO_TABLE_NAME = "footable";
+	protected final static String FOO_TABLE_NAME = "footable";
 	private final static String ENUM_TABLE_NAME = "enumtable";
 
 	private final static String NULL_BOOLEAN_TABLE_NAME = "nullbooltable";
@@ -3017,8 +3017,8 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	public void testNullForeign() throws Exception {
 		Dao<Order, Integer> orderDao = createDao(Order.class, true);
 
-		int NUM_ORDERS = 10;
-		for (int orderC = 0; orderC < NUM_ORDERS; orderC++) {
+		int numOrders = 10;
+		for (int orderC = 0; orderC < numOrders; orderC++) {
 			Order order = new Order();
 			order.val = orderC;
 			assertEquals(1, orderDao.create(order));
@@ -3026,7 +3026,40 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 
 		List<Order> results = orderDao.queryBuilder().where().isNull(Order.ONE_FIELD_NAME).query();
 		assertNotNull(results);
-		assertEquals(NUM_ORDERS, results.size());
+		assertEquals(numOrders, results.size());
+	}
+
+	public void testSelfGeneratedIdPrimary() throws Exception {
+		Dao<SelfGeneratedIdUuidPrimary, UUID> dao = createDao(SelfGeneratedIdUuidPrimary.class, true);
+		SelfGeneratedIdUuidPrimary foo = new SelfGeneratedIdUuidPrimary();
+		foo.stuff = "ewpfojwefjo";
+		assertEquals(1, dao.create(foo));
+
+		SelfGeneratedIdUuidPrimary result = dao.queryForId(foo.id);
+		assertNotNull(result);
+		assertEquals(foo.stuff, result.stuff);
+	}
+
+	public void testCreateIfNotExists() throws Exception {
+		Dao<Foo, String> dao = createDao(Foo.class, true);
+		Foo foo1 = new Foo();
+		String stuff = "stuff";
+		foo1.stuff = stuff;
+
+		Foo fooResult = dao.createIfNotExists(foo1);
+		assertSame(foo1, fooResult);
+
+		// now if we do it again, we should get the database copy of foo
+		fooResult = dao.createIfNotExists(foo1);
+		assertNotSame(foo1, fooResult);
+
+		assertEquals(foo1.id, fooResult.id);
+		assertEquals(foo1.stuff, fooResult.stuff);
+	}
+
+	public void testCreateIfNotExistsNull() throws Exception {
+		Dao<Foo, String> dao = createDao(Foo.class, true);
+		assertNull(dao.createIfNotExists(null));
 	}
 
 	/* ==================================================================================== */
@@ -4339,6 +4372,14 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	protected static class AllowGeneratedIdInsert {
 		@DatabaseField(generatedId = true, allowGeneratedIdInsert = true)
 		int id;
+
+		@DatabaseField
+		String stuff;
+	}
+
+	protected static class SelfGeneratedIdUuidPrimary {
+		@DatabaseField(generatedId = true)
+		UUID id;
 
 		@DatabaseField
 		String stuff;

@@ -91,7 +91,7 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 
 	/*
 	 * ==============================================================================================================
-	 * Insert the JdbcStatementBuilderTest.java below
+	 * Insert the JdbcQueryBuilderTest.java below
 	 * ==============================================================================================================
 	 */
 
