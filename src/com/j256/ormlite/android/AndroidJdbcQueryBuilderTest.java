@@ -854,7 +854,7 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 	/* ============================================================== */
 
 	protected void checkPartialIterator(Iterator<PartialData> iterator, List<Integer> ids, List<String> firsts,
-			List<String> lasts, boolean firstNull, boolean lastNull) throws SQLException {
+			List<String> lasts, boolean firstNull, boolean lastNull) {
 		int i = 0;
 		while (iterator.hasNext()) {
 			PartialData partialData = iterator.next();
@@ -876,7 +876,7 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 	}
 
 	protected void checkPartialList(List<PartialData> partialList, List<Integer> ids, List<String> firsts,
-			List<String> lasts, boolean firstNull, boolean lastNull) throws SQLException {
+			List<String> lasts, boolean firstNull, boolean lastNull) {
 		assertEquals(partialList.size(), ids.size());
 		for (int i = 0; i < partialList.size(); i++) {
 			PartialData partial = partialList.get(i);
@@ -895,7 +895,7 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 	}
 
 	private void checkPartial(PartialData partial, List<Integer> ids, List<String> firsts, List<String> lasts,
-			int which, boolean firstNull, boolean lastNull) throws SQLException {
+			int which, boolean firstNull, boolean lastNull) {
 		assertNotNull(partial);
 		assertTrue(which >= 0 && which < firsts.size());
 		assertEquals((int) ids.get(which), partial.id);

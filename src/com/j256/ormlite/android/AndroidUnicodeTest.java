@@ -72,7 +72,7 @@ public class AndroidUnicodeTest extends AndroidTestCase {
 			assertNotNull(results);
 			assertEquals(1, results.size());
 			assertEquals(unicodeString, results.get(0).stuff);
-			
+
 			where.clear();
 			where.eq(Foo.STUFF_FIELD_NAME, new SelectArg(unicodeString));
 			results = qb.query();

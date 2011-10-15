@@ -44,6 +44,7 @@ public class AndroidConnectionSourceTest extends AndroidTestCase {
 		assertFalse(sds.isOpen());
 	}
 
+	@SuppressWarnings("deprecation")
 	private OrmLiteSqliteOpenHelper getHelper() throws Exception {
 		OpenHelperManager.setOpenHelperClass(DatabaseHelper.class);
 		return OpenHelperManager.getHelper(getContext());
