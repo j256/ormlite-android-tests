@@ -6,6 +6,7 @@ import android.test.AndroidTestCase;
 
 import com.j256.ormlite.dao.BaseDaoImpl;
 import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.RuntimeExceptionDao;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.DatabaseTable;
@@ -31,6 +32,32 @@ public class CustomDaoTest extends AndroidTestCase {
 			assertEquals(foo.stuff, result.stuff);
 		} finally {
 			TableUtils.dropTable(helper.getConnectionSource(), Foo.class, true);
+		}
+	}
+
+	public void testCustomRuntimeExceptionDao() throws Exception {
+		DatabaseHelper helper = new DatabaseHelper(getContext());
+		RuntimeExceptionDao<Foo, Integer> ourDao = helper.getRuntimeExceptionDao(Foo.class);
+		TableUtils.dropTable(helper.getConnectionSource(), Foo.class, true);
+		TableUtils.createTable(helper.getConnectionSource(), Foo.class);
+		try {
+			Foo foo = new Foo();
+			foo.stuff = "jfpfjewf";
+			assertEquals(1, ourDao.create(foo));
+
+			Foo result = ourDao.queryForId(foo.id);
+			assertNotNull(result);
+			assertEquals(foo.stuff, result.stuff);
+		} finally {
+			TableUtils.dropTable(helper.getConnectionSource(), Foo.class, true);
+		}
+
+		try {
+			// should throw a runtime exception
+			ourDao.queryForId(1);
+			fail("should have thrown");
+		} catch (RuntimeException e) {
+			// expected
 		}
 	}
 
