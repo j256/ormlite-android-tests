@@ -652,7 +652,7 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
-		qb.limit(1);
+		qb.limit(1L);
 		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo1, results.get(0));
@@ -672,7 +672,7 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
-		qb.limit(1);
+		qb.limit(1L);
 		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo1, results.get(0));
@@ -689,7 +689,7 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 		assertEquals(2, results.size());
 		assertEquals(foo1, results.get(0));
 		assertEquals(foo2, results.get(1));
-		qb.limit(1);
+		qb.limit(1L);
 		results = fooDao.query(qb.prepare());
 		assertEquals(1, results.size());
 		assertEquals(foo1, results.get(0));
@@ -712,8 +712,8 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 		assertEquals(2, dao.queryForAll().size());
 
 		QueryBuilder<Foo, Object> qb = dao.queryBuilder();
-		int offset = 1;
-		int limit = 2;
+		long offset = 1;
+		long limit = 2;
 		qb.offset(offset);
 		qb.limit(limit);
 		List<Foo> results = dao.query(qb.prepare());
@@ -732,8 +732,7 @@ public class AndroidJdbcQueryBuilderTest extends AndroidTestCase {
 		assertEquals(2, dao.queryForAll().size());
 
 		QueryBuilder<Foo, Object> qb = dao.queryBuilder();
-		int offset = 1;
-		qb.offset(offset);
+		qb.offset(1L);
 		try {
 			dao.query(qb.prepare());
 			fail("expected exception");

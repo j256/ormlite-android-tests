@@ -10,6 +10,7 @@ import com.j256.ormlite.dao.RuntimeExceptionDao;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.DatabaseTable;
+import com.j256.ormlite.table.DatabaseTableConfig;
 import com.j256.ormlite.table.TableUtils;
 
 /**
@@ -67,6 +68,9 @@ public class CustomDaoTest extends AndroidTestCase {
 	public static class OurDaoImpl extends BaseDaoImpl<Foo, Integer> implements OurDao {
 		public OurDaoImpl(ConnectionSource connectionSource) throws SQLException {
 			super(connectionSource, Foo.class);
+		}
+		public OurDaoImpl(ConnectionSource connectionSource, DatabaseTableConfig<Foo> tableConfig) throws SQLException {
+			super(connectionSource, tableConfig);
 		}
 	}
 
