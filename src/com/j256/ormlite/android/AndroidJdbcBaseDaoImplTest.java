@@ -180,11 +180,9 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 	private final static String DEFAULT_BOOLEAN_VALUE = "true";
 	private final static String DEFAULT_STRING_VALUE = "foo";
 	// this can't have non-zero milliseconds
-	private static DateFormat defaultDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSSS");
 	private final static String DEFAULT_DATE_VALUE = "2010-07-16 01:31:17.000000";
 	private final static String DEFAULT_DATE_LONG_VALUE = "1282768620000";
 	private final static String DEFAULT_DATE_STRING_FORMAT = "MM/dd/yyyy HH-mm-ss-SSSSSS";
-	private static DateFormat defaultDateStringFormat = new SimpleDateFormat(DEFAULT_DATE_STRING_FORMAT);
 	private final static String DEFAULT_DATE_STRING_VALUE = "07/16/2010 01-31-17-000000";
 	private final static String DEFAULT_BYTE_VALUE = "1";
 	private final static String DEFAULT_SHORT_VALUE = "2";
@@ -1433,8 +1431,10 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		List<AllTypesDefault> allList = allDao.queryForAll();
 		assertEquals(1, allList.size());
 		all.stringField = DEFAULT_STRING_VALUE;
+		DateFormat defaultDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSSS");
 		all.dateField = defaultDateFormat.parse(DEFAULT_DATE_VALUE);
 		all.dateLongField = new Date(Long.parseLong(DEFAULT_DATE_LONG_VALUE));
+		DateFormat defaultDateStringFormat = new SimpleDateFormat(DEFAULT_DATE_STRING_FORMAT);
 		all.dateStringField = defaultDateStringFormat.parse(DEFAULT_DATE_STRING_VALUE);
 		all.booleanField = Boolean.parseBoolean(DEFAULT_BOOLEAN_VALUE);
 		all.booleanObj = Boolean.parseBoolean(DEFAULT_BOOLEAN_VALUE);
@@ -3062,6 +3062,75 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		assertNull(dao.createIfNotExists(null));
 	}
 
+	public void testCountOf() throws Exception {
+		Dao<Foo, String> dao = createDao(Foo.class, true);
+		assertEquals(0, dao.countOf());
+		Foo foo = new Foo();
+		foo.id = 1;
+		assertEquals(1, dao.create(foo));
+		assertEquals(1, dao.countOf());
+		foo.id = 2;
+		assertEquals(1, dao.create(foo));
+		assertEquals(2, dao.countOf());
+	}
+
+	public void testCountOfPrepared() throws Exception {
+		Dao<Foo, String> dao = createDao(Foo.class, true);
+		assertEquals(0, dao.countOf());
+		Foo foo = new Foo();
+		int id1 = 1;
+		foo.id = id1;
+		assertEquals(1, dao.create(foo));
+		foo.id = 2;
+		assertEquals(1, dao.create(foo));
+		assertEquals(2, dao.countOf());
+
+		QueryBuilder<Foo, String> qb = dao.queryBuilder();
+		qb.setCountOf(true).where().eq(Foo.ID_FIELD_NAME, id1);
+		assertEquals(1, dao.countOf(qb.prepare()));
+	}
+
+	public void testCountOfPreparedNoCountOf() throws Exception {
+		if (connectionSource == null) {
+			throw new IllegalArgumentException("Simulation");
+		}
+		Dao<Foo, String> dao = createDao(Foo.class, true);
+		QueryBuilder<Foo, String> qb = dao.queryBuilder();
+		try {
+			dao.countOf(qb.prepare());
+			fail("Should have thrown");
+		} catch (IllegalArgumentException e) {
+			// expected
+		}
+	}
+
+	public void testSelectRaw() throws Exception {
+		Dao<Foo, String> dao = createDao(Foo.class, true);
+		Foo foo = new Foo();
+		assertEquals(1, dao.create(foo));
+		QueryBuilder<Foo, String> qb = dao.queryBuilder();
+		qb.selectRaw("COUNT(*)");
+		GenericRawResults<String[]> results = dao.queryRaw(qb.prepareStatementString());
+		List<String[]> list = results.getResults();
+		assertEquals(1, list.size());
+		String[] array = list.get(0);
+		assertEquals(1, array.length);
+		assertEquals("1", array[0]);
+	}
+
+	public void testSelectRawNotQuery() throws Exception {
+		Dao<Foo, String> dao = createDao(Foo.class, true);
+		Foo foo = new Foo();
+		assertEquals(1, dao.create(foo));
+		QueryBuilder<Foo, String> qb = dao.queryBuilder();
+		qb.selectRaw("COUNTOF(*)");
+		try {
+			qb.query();
+		} catch (SQLException e) {
+			// expected
+		}
+	}
+
 	/* ==================================================================================== */
 
 	private <T extends TestableType<ID>, ID> void checkTypeAsId(Class<T> clazz, ID id1, ID id2) throws Exception {
@@ -3226,6 +3295,10 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 			if (other == null || other.getClass() != getClass())
 				return false;
 			return id == ((Foo) other).id;
+		}
+		@Override
+		public int hashCode() {
+			return id;
 		}
 		@Override
 		public String toString() {
