@@ -1,5 +1,6 @@
 package com.j256.ormlite.android;
 
+import java.util.Collection;
 import java.util.List;
 
 import android.test.AndroidTestCase;
@@ -7,6 +8,7 @@ import android.test.AndroidTestCase;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.DatabaseFieldConfig;
+import com.j256.ormlite.field.ForeignCollectionField;
 import com.j256.ormlite.field.types.LongType;
 import com.j256.ormlite.field.types.StringBytesType;
 import com.j256.ormlite.field.types.VoidType;
@@ -250,6 +252,15 @@ public class DatabaseTableConfigUtilTest extends AndroidTestCase {
 		assertTrue(fieldConfig.isVersion());
 	}
 
+	public void testForeignCollection() throws Exception {
+		DatabaseTableConfig<ForeignCollectionTest> tableConfig =
+				DatabaseTableConfigUtil.fromClass(connectionSource, ForeignCollectionTest.class);
+		assertNotNull(tableConfig);
+		List<DatabaseFieldConfig> fieldConfigs = tableConfig.getFieldConfigs();
+		assertEquals(1, fieldConfigs.size());
+		assertTrue(fieldConfigs.get(0).isForeignCollection());
+	}
+
 	/* ================== */
 
 	private <T> DatabaseFieldConfig getFirstField(Class<T> clazz) throws Exception {
@@ -407,6 +418,16 @@ public class DatabaseTableConfigUtilTest extends AndroidTestCase {
 	protected static class VersionClass {
 		@DatabaseField(version = true)
 		String foo;
+	}
+
+	protected static class ForeignCollectionTest {
+		@ForeignCollectionField
+		Collection<ForeignCollectionForeign> collection;
+	}
+
+	protected static class ForeignCollectionForeign {
+		@DatabaseField(id = true)
+		int foo;
 	}
 
 	protected static class Foo {
