@@ -8,7 +8,7 @@ import com.j256.ormlite.support.DatabaseConnection;
 
 public class AndroidConnectionSourceTest extends AndroidTestCase {
 
-	public void testSimpleDataSource() throws Exception {
+	public void testSimpleDataSource() {
 		AndroidConnectionSource sds = new AndroidConnectionSource(getHelper());
 		DatabaseConnection conn = sds.getReadOnlyConnection();
 		assertNotNull(conn);
@@ -16,7 +16,7 @@ public class AndroidConnectionSourceTest extends AndroidTestCase {
 		sds.close();
 	}
 
-	public void testConnectionAlreadyClosed() throws Exception {
+	public void testConnectionAlreadyClosed() {
 		AndroidConnectionSource sds = new AndroidConnectionSource(getHelper());
 		DatabaseConnection conn = sds.getReadOnlyConnection();
 		assertNotNull(conn);
@@ -36,7 +36,7 @@ public class AndroidConnectionSourceTest extends AndroidTestCase {
 		sds.releaseConnection(conn1);
 	}
 
-	public void testIsOpen() throws Exception {
+	public void testIsOpen() {
 		AndroidConnectionSource sds = new AndroidConnectionSource(getHelper());
 		sds.releaseConnection(sds.getReadOnlyConnection());
 		assertTrue(sds.isOpen());
@@ -45,7 +45,7 @@ public class AndroidConnectionSourceTest extends AndroidTestCase {
 	}
 
 	@SuppressWarnings("deprecation")
-	private OrmLiteSqliteOpenHelper getHelper() throws Exception {
+	private OrmLiteSqliteOpenHelper getHelper() {
 		OpenHelperManager.setOpenHelperClass(DatabaseHelper.class);
 		return OpenHelperManager.getHelper(getContext());
 	}

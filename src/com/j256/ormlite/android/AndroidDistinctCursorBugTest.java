@@ -21,7 +21,7 @@ public class AndroidDistinctCursorBugTest extends AndroidTestCase {
 	private final static String TABLE_NAME = "footable";
 	private final static String FIELD_NAME = "stuff";
 
-	public void testDistinctEscapedColumns() throws Exception {
+	public void testDistinctEscapedColumns() {
 		SQLiteDatabase db = new Helper(getContext(), "test.db", null, 1).getWritableDatabase();
 		dropTable(db);
 		try {
