@@ -8,7 +8,7 @@ import com.j256.ormlite.support.DatabaseConnection;
 
 public class AndroidConnectionSourceTest extends AndroidTestCase {
 
-	public void testSimpleDataSource() {
+	public void testSimpleDataSource() throws Exception {
 		AndroidConnectionSource sds = new AndroidConnectionSource(getHelper());
 		DatabaseConnection conn = sds.getReadOnlyConnection();
 		assertNotNull(conn);
@@ -16,7 +16,7 @@ public class AndroidConnectionSourceTest extends AndroidTestCase {
 		sds.close();
 	}
 
-	public void testConnectionAlreadyClosed() {
+	public void testConnectionAlreadyClosed() throws Exception {
 		AndroidConnectionSource sds = new AndroidConnectionSource(getHelper());
 		DatabaseConnection conn = sds.getReadOnlyConnection();
 		assertNotNull(conn);
@@ -36,7 +36,7 @@ public class AndroidConnectionSourceTest extends AndroidTestCase {
 		sds.releaseConnection(conn1);
 	}
 
-	public void testIsOpen() {
+	public void testIsOpen() throws Exception {
 		AndroidConnectionSource sds = new AndroidConnectionSource(getHelper());
 		sds.releaseConnection(sds.getReadOnlyConnection());
 		assertTrue(sds.isOpen());
