@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -618,7 +619,6 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		Dao<Foo, Integer> fooDao = createDao(Foo.class, true);
 		Iterator<Foo> iterator = fooDao.iterator();
 		assertFalse(iterator.hasNext());
-		assertNull(iterator.next());
 	}
 
 	public void testCreateNoId() throws Exception {
@@ -1058,6 +1058,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		if (databaseTypeClassName.equals("DerbyEmbeddedDatabaseType")
 				|| databaseTypeClassName.equals("MysqlDatabaseType")
 				|| databaseTypeClassName.equals("SqlServerDatabaseType")
+				|| databaseTypeClassName.equals("SqlServerJtdsDatabaseType")
 				|| databaseTypeClassName.equals("SqliteAndroidDatabaseType")) {
 			// some databases have miniscule default precision
 			foo.bigDecimalNumeric = new BigDecimal("12");
@@ -1101,6 +1102,7 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		if (databaseTypeClassName.equals("DerbyEmbeddedDatabaseType")
 				|| databaseTypeClassName.equals("MysqlDatabaseType")
 				|| databaseTypeClassName.equals("SqlServerDatabaseType")
+				|| databaseTypeClassName.equals("SqlServerJtdsDatabaseType")
 				|| databaseTypeClassName.equals("SqliteAndroidDatabaseType")) {
 			// some databases have miniscule default precision
 			bigDecimalNumericVal = new BigDecimal("12");
@@ -3228,6 +3230,58 @@ public class AndroidJdbcBaseDaoImplTest extends AndroidTestCase {
 		} catch (SQLException e) {
 			// expected
 		}
+	}
+
+	public void testLimitOffset() throws Exception {
+		final Dao<Foo, Object> dao = createDao(Foo.class, true);
+		final int numPages = 10;
+		final int numPerPage = 10;
+		final List<Foo> foos = new ArrayList<Foo>();
+		dao.callBatchTasks(new Callable<Void>() {
+			public Void call() throws Exception {
+				for (int i = 0; i < numPages + numPerPage; i++) {
+					Foo foo = new Foo();
+					foos.add(foo);
+					assertEquals(1, dao.create(foo));
+				}
+				return null;
+			}
+		});
+		QueryBuilder<Foo, Object> qb = dao.queryBuilder();
+		for (int pageC = 0; pageC < numPages; pageC++) {
+			qb.limit((long) numPerPage);
+			int offset = pageC * numPerPage;
+			qb.offset((long) offset);
+			List<Foo> results = qb.query();
+			for (int i = 0; i < results.size(); i++) {
+				assertEquals(foos.get(offset + i), results.get(i));
+			}
+		}
+	}
+
+	public void testIteratorMove() throws Exception {
+		Dao<Foo, Integer> dao = createDao(Foo.class, true);
+		Foo foo1 = new Foo();
+		assertEquals(1, dao.create(foo1));
+		Foo foo2 = new Foo();
+		assertEquals(1, dao.create(foo2));
+		Foo foo3 = new Foo();
+		assertEquals(1, dao.create(foo3));
+
+		CloseableIterator<Foo> iterator = dao.iterator(ResultSet.TYPE_SCROLL_INSENSITIVE);
+		assertEquals(foo1, iterator.next());
+		assertEquals(foo1, iterator.current());
+		assertEquals(foo2, iterator.next());
+		assertEquals(foo2, iterator.current());
+		assertEquals(foo1, iterator.previous());
+		assertEquals(foo2, iterator.next());
+		assertEquals(foo3, iterator.next());
+		assertEquals(foo1, iterator.first());
+		assertEquals(foo3, iterator.moveRelative(2));
+		assertEquals(foo3, iterator.moveRelative(0));
+		assertEquals(foo2, iterator.moveRelative(-1));
+		assertEquals(foo3, iterator.next());
+		assertEquals(null, iterator.nextThrow());
 	}
 
 	/* ==================================================================================== */
