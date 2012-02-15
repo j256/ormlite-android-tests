@@ -3,8 +3,6 @@ package com.j256.ormlite.android;
 import java.util.Collection;
 import java.util.List;
 
-import android.test.AndroidTestCase;
-
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.field.DatabaseFieldConfig;
@@ -12,33 +10,9 @@ import com.j256.ormlite.field.ForeignCollectionField;
 import com.j256.ormlite.field.types.LongType;
 import com.j256.ormlite.field.types.StringBytesType;
 import com.j256.ormlite.field.types.VoidType;
-import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.DatabaseTableConfig;
 
-public class DatabaseTableConfigUtilTest extends AndroidTestCase {
-
-	private ConnectionSource connectionSource;
-	private DatabaseHelper helper;
-
-	@Override
-	public void setUp() throws Exception {
-		super.setUp();
-		helper = new DatabaseHelper(getContext());
-		connectionSource = helper.getConnectionSource();
-	}
-
-	@Override
-	public void tearDown() throws Exception {
-		super.tearDown();
-		if (helper != null) {
-			helper.close();
-			helper = null;
-		}
-		if (connectionSource != null) {
-			connectionSource.close();
-			connectionSource = null;
-		}
-	}
+public class DatabaseTableConfigUtilTest extends BaseDaoTest {
 
 	/*
 	 * ==============================================================================================================

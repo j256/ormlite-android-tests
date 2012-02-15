@@ -2,40 +2,15 @@ package com.j256.ormlite.android;
 
 import java.util.List;
 
-import android.test.AndroidTestCase;
-
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.stmt.QueryBuilder;
 import com.j256.ormlite.stmt.SelectArg;
 import com.j256.ormlite.stmt.Where;
-import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
 
-public class AndroidUnicodeTest extends AndroidTestCase {
-
-	private ConnectionSource connectionSource;
-	private DatabaseHelper helper;
-
-	@Override
-	public void setUp() throws Exception {
-		super.setUp();
-		helper = new DatabaseHelper(getContext());
-		connectionSource = helper.getConnectionSource();
-	}
-
-	@Override
-	public void tearDown() throws Exception {
-		super.tearDown();
-		if (helper != null) {
-			helper.close();
-		}
-		if (connectionSource != null) {
-			connectionSource.close();
-			connectionSource = null;
-		}
-	}
+public class AndroidUnicodeTest extends BaseDaoTest {
 
 	public void testStoreUnicode() throws Exception {
 		TableUtils.dropTable(connectionSource, Foo.class, true);

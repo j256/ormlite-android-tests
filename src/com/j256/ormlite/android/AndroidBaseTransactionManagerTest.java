@@ -1,91 +1,14 @@
 package com.j256.ormlite.android;
 
 import java.sql.SQLException;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Callable;
 
-import android.test.AndroidTestCase;
-
-import com.j256.ormlite.dao.BaseDaoImpl;
 import com.j256.ormlite.dao.Dao;
-import com.j256.ormlite.db.DatabaseType;
-import com.j256.ormlite.db.SqliteAndroidDatabaseType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.misc.TransactionManager;
-import com.j256.ormlite.support.ConnectionSource;
-import com.j256.ormlite.table.DatabaseTableConfig;
-import com.j256.ormlite.table.TableUtils;
 
-public class AndroidBaseTransactionManagerTest extends AndroidTestCase {
-
-	private ConnectionSource connectionSource;
-	private DatabaseHelper helper;
-	private DatabaseType databaseType = new SqliteAndroidDatabaseType();
-
-	private Set<DatabaseTableConfig<?>> dropClassSet = new HashSet<DatabaseTableConfig<?>>();
-
-	@Override
-	protected void setUp() throws Exception {
-		super.setUp();
-		helper = new DatabaseHelper(getContext());
-		connectionSource = helper.getConnectionSource();
-	}
-
-	@Override
-	protected void tearDown() throws Exception {
-		super.tearDown();
-		if (helper != null) {
-			helper.close();
-			helper = null;
-		}
-		if (connectionSource != null) {
-			connectionSource.close();
-			connectionSource = null;
-		}
-	}
-
-	private <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {
-		return createDao(DatabaseTableConfig.fromClass(connectionSource, clazz), createTable);
-	}
-
-	private <T, ID> Dao<T, ID> createDao(DatabaseTableConfig<T> tableConfig, boolean createTable) throws Exception {
-		BaseDaoImpl<T, ID> dao = new BaseDaoImpl<T, ID>(connectionSource, tableConfig) {
-		};
-		return configDao(tableConfig, createTable, dao);
-	}
-
-	private <T> void createTable(DatabaseTableConfig<T> tableConfig, boolean dropAtEnd) throws Exception {
-		try {
-			// first we drop it in case it existed before
-			dropTable(tableConfig, true);
-		} catch (SQLException ignored) {
-			// ignore any errors about missing tables
-		}
-		TableUtils.createTable(connectionSource, tableConfig);
-		if (dropAtEnd) {
-			dropClassSet.add(tableConfig);
-		}
-	}
-
-	private <T> void dropTable(DatabaseTableConfig<T> tableConfig, boolean ignoreErrors) throws Exception {
-		// drop the table and ignore any errors along the way
-		TableUtils.dropTable(connectionSource, tableConfig, ignoreErrors);
-	}
-
-	private <T, ID> Dao<T, ID> configDao(DatabaseTableConfig<T> tableConfig, boolean createTable, BaseDaoImpl<T, ID> dao)
-			throws Exception {
-		if (connectionSource == null) {
-			throw new SQLException("no connection source configured");
-		}
-		dao.setConnectionSource(connectionSource);
-		if (createTable) {
-			createTable(tableConfig, true);
-		}
-		dao.initialize();
-		return dao;
-	}
+public class AndroidBaseTransactionManagerTest extends BaseDaoTest {
 
 	/*
 	 * ==============================================================================================================
