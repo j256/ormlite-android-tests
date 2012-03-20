@@ -20,7 +20,7 @@ public class DaoManagerReflectionTest extends BaseDaoTest {
 		Dao<Foo, Object> fooDao1 = createDao(Foo.class, true);
 		Dao<Foo, ?> fooDao2 = DaoManager.lookupDao(connectionSource, Foo.class);
 		assertSame(fooDao1, fooDao2);
-		
+
 		Dao<Foreign, Integer> foreignDao1 = DaoManager.lookupDao(connectionSource, Foreign.class);
 		assertNotNull(foreignDao1);
 		Dao<Foreign, Integer> foreignDao2 = DaoManager.createDao(connectionSource, Foreign.class);
