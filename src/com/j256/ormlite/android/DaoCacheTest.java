@@ -15,6 +15,10 @@ import com.j256.ormlite.table.TableUtils;
 
 /**
  * User test which tests some cache issues.
+ * 
+ * <p>
+ * <b>WARNING:</b> This does NOT extend our BaseDaoTest because it needs to start and stop stuff in the middle
+ * </p>
  */
 public class DaoCacheTest extends AndroidTestCase {
 
