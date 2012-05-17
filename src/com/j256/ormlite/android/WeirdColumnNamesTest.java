@@ -13,7 +13,7 @@ import com.j256.ormlite.field.DatabaseField;
 public class WeirdColumnNamesTest extends BaseDaoTest {
 
 	public void testWierdColumnNames() throws Exception {
-		Dao<WeirdColumnNames, Object> dao = createDao(WeirdColumnNames.class, true);
+		Dao<WeirdColumnNames, Integer> dao = createDao(WeirdColumnNames.class, true);
 		WeirdColumnNames foo = new WeirdColumnNames();
 		foo.stuff = "peowjfpwjfowefwe";
 		assertEquals(1, dao.create(foo));
@@ -33,7 +33,7 @@ public class WeirdColumnNamesTest extends BaseDaoTest {
 	 * columns is greater than some constant.
 	 */
 	public void testManyColumns() throws Exception {
-		Dao<ManyColumns, Object> dao = createDao(ManyColumns.class, true);
+		Dao<ManyColumns, Integer> dao = createDao(ManyColumns.class, true);
 		ManyColumns foo = new ManyColumns();
 		foo.stuff1 = "peowjfpwjfowefwe";
 		foo.stuff10 = "pgjpoeowjfpwjfowefwe";
