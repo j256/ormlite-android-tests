@@ -1,16 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.j256.ormlite.android"
-	android:versionCode="1" android:versionName="1.0">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.j256.ormlite.android"
+    android:versionCode="1"
+    android:versionName="1.0" >
 
-	<application>
-		<uses-library android:name="android.test.runner" />
-	</application>
+    <uses-sdk
+        android:minSdkVersion="4"
+        android:targetSdkVersion="4" />
 
-	<!--
+    <application>
+        <uses-library android:name="android.test.runner" />
+    </application>
+
+    <!--
 		This declares that this app uses the instrumentation test runner targeting the package of com.android.samples. To run
 		the tests use the command: "adb shell am instrument -w
 		com.android.samples.tests/android.test.InstrumentationTestRunner"
-	-->
-	<instrumentation android:name="com.j256.ormlite.LocalInstrumentationTestRunner" android:targetPackage="com.j256.ormlite.android"
-		android:label="Tests for ORMLite" />
-</manifest> 
+    -->
+    <instrumentation
+        android:name="com.j256.ormlite.LocalInstrumentationTestRunner"
+        android:label="Tests for ORMLite"
+        android:targetPackage="com.j256.ormlite.android" />
+
+</manifest>
