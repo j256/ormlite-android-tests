@@ -7,6 +7,7 @@ import java.util.concurrent.Callable;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.misc.TransactionManager;
+import com.j256.ormlite.support.DatabaseConnection;
 
 public class AndroidBaseTransactionManagerTest extends BaseDaoTest {
 
@@ -127,6 +128,30 @@ public class AndroidBaseTransactionManagerTest extends BaseDaoTest {
 		 * exception is caught there.
 		 */
 		assertEquals(0, fooList.size());
+	}
+
+	public void testAutoCommitOff() throws Exception {
+		final Dao<Foo, Integer> dao = createDao(Foo.class, true);
+		final Foo foo = new Foo();
+		foo.stuff = "stuffery";
+		DatabaseConnection conn = dao.startThreadConnection();
+		try {
+			dao.setAutoCommit(conn, false);
+			TransactionManager.callInTransaction(connectionSource, new Callable<Void>() {
+				public Void call() throws Exception {
+					assertEquals(1, dao.create(foo));
+					return null;
+				}
+			});
+			// close and open the connection
+			closeConnectionSource();
+			openConnectionSource();
+			Foo result = dao.queryForId(foo.id);
+			assertNotNull(result);
+			assertEquals(foo.stuff, result.stuff);
+		} finally {
+			dao.endThreadConnection(conn);
+		}
 	}
 
 	protected void testTransactionManager(TransactionManager mgr, final Exception exception,

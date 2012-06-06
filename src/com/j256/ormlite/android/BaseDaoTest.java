@@ -36,13 +36,6 @@ public abstract class BaseDaoTest extends AndroidTestCase {
 	@Override
 	public void tearDown() throws Exception {
 		super.tearDown();
-		closeConnectionSource();
-		if (helper != null) {
-			helper.close();
-		}
-	}
-
-	protected void closeConnectionSource() throws Exception {
 		if (connectionSource != null) {
 			for (Class<?> clazz : dropClassSet) {
 				dropTable(clazz, true);
@@ -50,10 +43,24 @@ public abstract class BaseDaoTest extends AndroidTestCase {
 			for (DatabaseTableConfig<?> tableConfig : dropTableConfigSet) {
 				dropTable(tableConfig, true);
 			}
+		}
+		closeConnectionSource();
+		if (helper != null) {
+			helper.close();
+		}
+	}
+
+	protected void openConnectionSource() {
+		if (connectionSource == null) {
+			connectionSource = helper.getConnectionSource();
+		}
+	}
+
+	protected void closeConnectionSource() throws Exception {
+		if (connectionSource != null) {
 			connectionSource.close();
 			connectionSource = null;
 		}
-		databaseType = null;
 	}
 
 	protected <T, ID> Dao<T, ID> createDao(Class<T> clazz, boolean createTable) throws Exception {

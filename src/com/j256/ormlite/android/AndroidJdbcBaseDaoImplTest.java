@@ -37,6 +37,7 @@ import com.j256.ormlite.stmt.QueryBuilder;
 import com.j256.ormlite.stmt.SelectArg;
 import com.j256.ormlite.stmt.UpdateBuilder;
 import com.j256.ormlite.stmt.Where;
+import com.j256.ormlite.support.DatabaseConnection;
 import com.j256.ormlite.table.DatabaseTable;
 import com.j256.ormlite.table.DatabaseTableConfig;
 import com.j256.ormlite.table.TableUtils;
@@ -45,6 +46,8 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 
 	private final static boolean CLOSE_IS_NOOP = true;
 	private final static boolean DELETE_ROWS_NO_WHERE_RETURNS_ZERO = true;
+	// can't be final
+	public static boolean AUTO_COMMIT_SUPPORTED = false;
 
 	/*
 	 * ==============================================================================================================
@@ -292,7 +295,9 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 				closeConnectionSource();
 				iterator.remove();
 			}
-			fail("expected exception");
+			if (!CLOSE_IS_NOOP) {
+				fail("expected exception");
+			}
 		} catch (Exception e) {
 			// expected
 		} finally {
@@ -3265,6 +3270,43 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		assertEquals(2, foo1.version);
 		// but when we try to update the earlier foo, the version doesn't match
 		assertEquals(0, dao.update(foo1));
+	}
+
+	public void testConnectionMethods() throws Exception {
+		if (!AUTO_COMMIT_SUPPORTED) {
+			return;
+		}
+		Dao<Foo, Integer> dao = createDao(Foo.class, true);
+		DatabaseConnection conn = null;
+		try {
+			conn = dao.startThreadConnection();
+			assertTrue(dao.isAutoCommit(conn));
+			dao.setAutoCommit(conn, false);
+			assertFalse(dao.isAutoCommit(conn));
+
+			Foo foo = new Foo();
+			assertEquals(1, dao.create(foo));
+			assertNotNull(dao.queryForId(foo.id));
+
+			dao.rollBack(conn);
+			assertNull(dao.queryForId(foo.id));
+
+			foo = new Foo();
+			assertEquals(1, dao.create(foo));
+			assertNotNull(dao.queryForId(foo.id));
+
+			dao.commit(conn);
+			assertNotNull(dao.queryForId(foo.id));
+
+			dao.rollBack(conn);
+			assertNotNull(dao.queryForId(foo.id));
+
+		} finally {
+			if (conn != null) {
+				dao.setAutoCommit(conn, true);
+				dao.endThreadConnection(conn);
+			}
+		}
 	}
 
 	/* ==================================================================================== */

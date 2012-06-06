@@ -880,6 +880,10 @@ public class AndroidJdbcQueryBuilderTest extends BaseDaoTest {
 				return false;
 			return id.equals(((Foo) other).id);
 		}
+		@Override
+		public int hashCode() {
+			return id.hashCode();
+		}
 	}
 
 	protected static class PartialData {
