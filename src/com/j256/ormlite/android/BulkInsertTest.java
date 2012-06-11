@@ -6,6 +6,7 @@ import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.logger.Logger;
 import com.j256.ormlite.logger.LoggerFactory;
+import com.j256.ormlite.support.DatabaseConnection;
 
 /**
  * Tests some escaping of names
@@ -16,7 +17,7 @@ public class BulkInsertTest extends BaseDaoTest {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public void testBulk() throws Exception {
+	public void testBatch() throws Exception {
 		final Dao<Foo, Integer> dao = createDao(Foo.class, true);
 
 		logger.info("starting bulk no-batch run");
@@ -36,6 +37,29 @@ public class BulkInsertTest extends BaseDaoTest {
 		});
 		long batchTimeMs = System.currentTimeMillis() - before;
 		logger.info("bulk batch run finished after {}ms", batchTimeMs);
+		assertTrue(batchTimeMs < noBatchTimeMs);
+	}
+
+	public void testAutoCommit() throws Exception {
+		final Dao<Foo, Integer> dao = createDao(Foo.class, true);
+
+		logger.info("starting autocommit(true) no-batch run");
+		long before = System.currentTimeMillis();
+		doInserts(dao);
+		long noBatchTimeMs = System.currentTimeMillis() - before;
+		logger.info("bulk autocommit(true) run finished after {}ms", noBatchTimeMs);
+
+		logger.info("starting autocommit(false) batch run");
+		before = System.currentTimeMillis();
+		DatabaseConnection conn = dao.startThreadConnection();
+		conn.setAutoCommit(false);
+		try {
+			doInserts(dao);
+		} finally {
+			conn.setAutoCommit(true);
+		}
+		long batchTimeMs = System.currentTimeMillis() - before;
+		logger.info("bulk autocommit(false) run finished after {}ms", batchTimeMs);
 		assertTrue(batchTimeMs < noBatchTimeMs);
 	}
 
