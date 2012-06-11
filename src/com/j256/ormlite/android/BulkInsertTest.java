@@ -52,15 +52,41 @@ public class BulkInsertTest extends BaseDaoTest {
 		logger.info("starting autocommit(false) batch run");
 		before = System.currentTimeMillis();
 		DatabaseConnection conn = dao.startThreadConnection();
-		conn.setAutoCommit(false);
 		try {
+			conn.setAutoCommit(false);
 			doInserts(dao);
 		} finally {
 			conn.setAutoCommit(true);
+			dao.endThreadConnection(conn);
 		}
 		long batchTimeMs = System.currentTimeMillis() - before;
 		logger.info("bulk autocommit(false) run finished after {}ms", batchTimeMs);
 		assertTrue(batchTimeMs < noBatchTimeMs);
+	}
+
+	public void testInsertInBatches() throws Exception {
+		final Dao<Foo, Integer> dao = createDao(Foo.class, true);
+		logger.info("starting batch run using transactions directly");
+		long before = System.currentTimeMillis();
+		DatabaseConnection conn = dao.startThreadConnection();
+		try {
+			conn.setSavePoint(null);
+			for (int i = 0; i < 10000; i++) {
+				Foo foo = new Foo();
+				foo.stuff1 = Integer.toString(i);
+				assertEquals(1, dao.create(foo));
+				// every so often try commiting the transaction and then starting the next one
+				if (i % 1000 == 0) {
+					conn.commit(null);
+					conn.setSavePoint(null);
+				}
+			}
+		} finally {
+			conn.commit(null);
+			dao.endThreadConnection(conn);
+		}
+		long noBatchTimeMs = System.currentTimeMillis() - before;
+		logger.info("bulk transaction run finished after {}ms", noBatchTimeMs);
 	}
 
 	private void doInserts(final Dao<Foo, Integer> dao) throws Exception {
