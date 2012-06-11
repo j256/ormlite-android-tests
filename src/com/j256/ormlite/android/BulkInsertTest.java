@@ -1,5 +1,6 @@
 package com.j256.ormlite.android;
 
+import java.sql.Savepoint;
 import java.util.concurrent.Callable;
 
 import com.j256.ormlite.dao.Dao;
@@ -69,20 +70,22 @@ public class BulkInsertTest extends BaseDaoTest {
 		logger.info("starting batch run using transactions directly");
 		long before = System.currentTimeMillis();
 		DatabaseConnection conn = dao.startThreadConnection();
+		Savepoint savePoint = null;
 		try {
-			conn.setSavePoint(null);
+			savePoint = conn.setSavePoint(null);
 			for (int i = 0; i < 10000; i++) {
 				Foo foo = new Foo();
 				foo.stuff1 = Integer.toString(i);
 				assertEquals(1, dao.create(foo));
-				// every so often try commiting the transaction and then starting the next one
+				// every so often commit the transaction and then start the next one
 				if (i % 1000 == 0) {
-					conn.commit(null);
-					conn.setSavePoint(null);
+					conn.commit(savePoint);
+					savePoint = conn.setSavePoint(null);
 				}
 			}
 		} finally {
-			conn.commit(null);
+			// commit at the end
+			conn.commit(savePoint);
 			dao.endThreadConnection(conn);
 		}
 		long noBatchTimeMs = System.currentTimeMillis() - before;
