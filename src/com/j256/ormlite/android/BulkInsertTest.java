@@ -10,7 +10,7 @@ import com.j256.ormlite.logger.LoggerFactory;
 import com.j256.ormlite.support.DatabaseConnection;
 
 /**
- * Tests some escaping of names
+ * Inserting lots of data tests.
  * 
  * @author graywatson
  */

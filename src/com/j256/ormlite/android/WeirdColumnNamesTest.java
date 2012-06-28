@@ -6,7 +6,7 @@ import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.field.DatabaseField;
 
 /**
- * Tests some escaping of names
+ * Tests some strange column names which causes issues.
  * 
  * @author graywatson
  */
