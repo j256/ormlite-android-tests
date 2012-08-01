@@ -50,6 +50,7 @@ public class BulkInsertTest extends BaseDaoTest {
 		long noBatchTimeMs = System.currentTimeMillis() - before;
 		logger.info("bulk autocommit(true) run finished after {}ms", noBatchTimeMs);
 
+		// ------------------------------------------------------
 		logger.info("starting autocommit(false) batch run");
 		before = System.currentTimeMillis();
 		DatabaseConnection conn = dao.startThreadConnection();
@@ -63,6 +64,22 @@ public class BulkInsertTest extends BaseDaoTest {
 		long batchTimeMs = System.currentTimeMillis() - before;
 		logger.info("bulk autocommit(false) run finished after {}ms", batchTimeMs);
 		assertTrue(batchTimeMs < noBatchTimeMs);
+		
+		// ------------------------------------------------------
+		logger.info("starting setSavePoint batch run");
+		before = System.currentTimeMillis();
+		conn = dao.startThreadConnection();
+		Savepoint savePoint = null;
+		try {
+			savePoint = conn.setSavePoint(null);
+			doInserts(dao);
+		} finally {
+			// commit at the end
+			conn.commit(savePoint);
+			dao.endThreadConnection(conn);
+		}
+		noBatchTimeMs = System.currentTimeMillis() - before;
+		logger.info("setSavePoint run finished after {}ms", noBatchTimeMs);
 	}
 
 	public void testInsertInBatches() throws Exception {
