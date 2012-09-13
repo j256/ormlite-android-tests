@@ -64,7 +64,7 @@ public class BulkInsertTest extends BaseDaoTest {
 		long batchTimeMs = System.currentTimeMillis() - before;
 		logger.info("bulk autocommit(false) run finished after {}ms", batchTimeMs);
 		assertTrue(batchTimeMs < noBatchTimeMs);
-		
+
 		// ------------------------------------------------------
 		logger.info("starting setSavePoint batch run");
 		before = System.currentTimeMillis();
