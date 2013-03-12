@@ -1,9 +1,7 @@
--------------------------------------------------------------------------------------------------------
-
 BACKGROUND:
 
-This package provides Android tests for the Ormlite project.  These tests are for running inside
-of an Android virtual machine.
+This package provides Android tests for the Ormlite project.  These tests are for running
+inside of an Android virtual machine.
 
 For more information, see the online documentation on the home page:
 
@@ -11,5 +9,3 @@ For more information, see the online documentation on the home page:
 
 Enjoy,
 Gray Watson
-
--------------------------------------------------------------------------------------------------------
