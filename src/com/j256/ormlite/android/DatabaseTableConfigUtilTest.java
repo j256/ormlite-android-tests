@@ -60,6 +60,7 @@ public class DatabaseTableConfigUtilTest extends BaseDaoTest {
 		assertTrue(foundName);
 		assertTrue(foundSomeObject);
 	}
+
 	public void testNoAnnotation() throws Exception {
 		assertNull(DatabaseTableConfigUtil.fromClass(connectionSource, getClass()));
 	}
