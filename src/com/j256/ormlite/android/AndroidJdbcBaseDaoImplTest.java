@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 
+import android.annotation.SuppressLint;
 import com.j256.ormlite.dao.BaseDaoImpl;
 import com.j256.ormlite.dao.CloseableIterator;
 import com.j256.ormlite.dao.Dao;
@@ -1356,6 +1357,7 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		assertTrue(allDao.objectsEqual(all, allList.get(0)));
 	}
 
+	@SuppressLint("SimpleDateFormat")
 	public void testDefaultValueHandling() throws Exception {
 		Dao<AllTypesDefault, Object> allDao = createDao(AllTypesDefault.class, true);
 		AllTypesDefault all = new AllTypesDefault();
@@ -2668,7 +2670,7 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		assertEquals(id, results.get(0).id);
 
 		// this should match none
-		where.clear();
+		where.reset();
 		where.and(where.eq(Foo.VAL_FIELD_NAME, val), where.eq(Foo.ID_FIELD_NAME, id),
 				where.eq(Foo.ID_FIELD_NAME, notId));
 		results = where.query();
@@ -2698,7 +2700,7 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		assertEquals(id, results.get(0).id);
 
 		// this should match none
-		where.clear();
+		where.reset();
 		where.eq(Foo.VAL_FIELD_NAME, val);
 		where.eq(Foo.ID_FIELD_NAME, id);
 		where.eq(Foo.ID_FIELD_NAME, notId);

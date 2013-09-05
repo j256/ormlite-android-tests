@@ -48,7 +48,7 @@ public class AndroidUnicodeTest extends BaseDaoTest {
 			assertEquals(1, results.size());
 			assertEquals(unicodeString, results.get(0).stuff);
 
-			where.clear();
+			where.reset();
 			where.eq(Foo.STUFF_FIELD_NAME, new SelectArg(unicodeString));
 			results = qb.query();
 			assertNotNull(results);
