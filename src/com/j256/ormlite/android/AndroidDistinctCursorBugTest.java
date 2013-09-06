@@ -86,9 +86,11 @@ public class AndroidDistinctCursorBugTest extends AndroidTestCase {
 		}
 		@Override
 		public void onCreate(SQLiteDatabase db) {
+			// noop
 		}
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+			// noop
 		}
 	}
 }
