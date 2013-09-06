@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 
 import android.annotation.SuppressLint;
+
 import com.j256.ormlite.dao.BaseDaoImpl;
 import com.j256.ormlite.dao.CloseableIterator;
 import com.j256.ormlite.dao.Dao;
