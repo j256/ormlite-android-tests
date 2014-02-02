@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -981,6 +982,7 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		UUID uuidVal = UUID.randomUUID();
 		BigInteger bigIntegerVal = new BigInteger("13213123214432423423423423423423423423423423423423423");
 		BigDecimal bigDecimalVal = new BigDecimal("1321312.1231231233214432423423423423423423423423423423423423423");
+		Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 		// some databases have miniscule default precision
 		BigDecimal bigDecimalNumericVal;
 		String databaseTypeClassName = databaseType.getClass().getSimpleName();
@@ -1014,6 +1016,7 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		allTypes.bigInteger = bigIntegerVal;
 		allTypes.bigDecimal = bigDecimalVal;
 		allTypes.bigDecimalNumeric = bigDecimalNumericVal;
+		allTypes.timestamp = timestamp;
 		SerialData obj = new SerialData();
 		String key = "key";
 		String value = "value";
@@ -1048,6 +1051,7 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		checkQueryResult(allDao, qb, allTypes, AllTypes.BIG_INTEGER_FIELD_NAME, bigIntegerVal, true);
 		checkQueryResult(allDao, qb, allTypes, AllTypes.BIG_DECIMAL_FIELD_NAME, bigDecimalVal, true);
 		checkQueryResult(allDao, qb, allTypes, AllTypes.BIG_DECIMAL_NUMERIC_FIELD_NAME, bigDecimalNumericVal, true);
+		checkQueryResult(allDao, qb, allTypes, AllTypes.TIME_STAMP_FIELD_NAME, timestamp, true);
 	}
 
 	/**
@@ -1387,6 +1391,7 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		all.doubleField = Double.parseDouble(DEFAULT_DOUBLE_VALUE);
 		all.doubleObj = Double.parseDouble(DEFAULT_DOUBLE_VALUE);
 		all.ourEnum = OurEnum.valueOf(DEFAULT_ENUM_VALUE);
+		all.timestamp = new Timestamp(defaultDateStringFormat.parse(DEFAULT_DATE_STRING_VALUE).getTime());
 		assertFalse(allDao.objectsEqual(all, allList.get(0)));
 	}
 
@@ -3616,6 +3621,7 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		public static final String BIG_INTEGER_FIELD_NAME = "bigInteger";
 		public static final String BIG_DECIMAL_FIELD_NAME = "bigDecimal";
 		public static final String BIG_DECIMAL_NUMERIC_FIELD_NAME = "bigDecimalNumeric";
+		public static final String TIME_STAMP_FIELD_NAME = "timestamp";
 		@DatabaseField(generatedId = true)
 		int id;
 		@DatabaseField(columnName = STRING_FIELD_NAME)
@@ -3626,7 +3632,8 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		Date dateField;
 		@DatabaseField(columnName = DATE_LONG_FIELD_NAME, dataType = DataType.DATE_LONG)
 		Date dateLongField;
-		@DatabaseField(columnName = DATE_STRING_FIELD_NAME, dataType = DataType.DATE_STRING, format = DEFAULT_DATE_STRING_FORMAT)
+		@DatabaseField(columnName = DATE_STRING_FIELD_NAME, dataType = DataType.DATE_STRING,
+				format = DEFAULT_DATE_STRING_FORMAT)
 		Date dateStringField;
 		@DatabaseField(columnName = CHAR_FIELD_NAME)
 		char charField;
@@ -3658,6 +3665,8 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		BigDecimal bigDecimal;
 		@DatabaseField(columnName = BIG_DECIMAL_NUMERIC_FIELD_NAME, dataType = DataType.BIG_DECIMAL_NUMERIC)
 		BigDecimal bigDecimalNumeric;
+		@DatabaseField(columnName = TIME_STAMP_FIELD_NAME)
+		Timestamp timestamp;
 		AllTypes() {
 		}
 	}
@@ -3671,7 +3680,7 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		Date dateField;
 		@DatabaseField(dataType = DataType.DATE_LONG, defaultValue = DEFAULT_DATE_LONG_VALUE)
 		Date dateLongField;
-		@DatabaseField(dataType = DataType.DATE_STRING, defaultValue = DEFAULT_DATE_STRING_VALUE, format = DEFAULT_DATE_STRING_FORMAT)
+		@DatabaseField(defaultValue = DEFAULT_DATE_STRING_VALUE, format = DEFAULT_DATE_STRING_FORMAT)
 		Date dateStringField;
 		@DatabaseField(defaultValue = DEFAULT_BOOLEAN_VALUE)
 		boolean booleanField;
@@ -3707,6 +3716,8 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		OurEnum ourEnum;
 		@DatabaseField(defaultValue = DEFAULT_ENUM_NUMBER_VALUE, dataType = DataType.ENUM_INTEGER)
 		OurEnum ourEnumNumber;
+		@DatabaseField(defaultValue = DEFAULT_DATE_STRING_VALUE, format = DEFAULT_DATE_STRING_FORMAT)
+		Timestamp timestamp;
 		AllTypesDefault() {
 		}
 	}
