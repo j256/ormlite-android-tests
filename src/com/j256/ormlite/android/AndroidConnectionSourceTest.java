@@ -34,6 +34,7 @@ public class AndroidConnectionSourceTest extends AndroidTestCase {
 		sds.saveSpecialConnection(conn1);
 		sds.clearSpecialConnection(conn1);
 		sds.releaseConnection(conn1);
+		sds.close();
 	}
 
 	public void testIsOpen() throws Exception {
