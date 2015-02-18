@@ -5,3 +5,5 @@ bin/
 /gen
 /assets
 /lint.xml
+/libs
+/res
