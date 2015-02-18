@@ -6,7 +6,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -16,11 +15,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-
-import android.annotation.SuppressLint;
 
 import com.j256.ormlite.dao.BaseDaoImpl;
 import com.j256.ormlite.dao.CloseableIterator;
@@ -48,7 +46,7 @@ import com.j256.ormlite.table.TableUtils;
 public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 
 	private final static boolean CLOSE_IS_NOOP = true;
-	private final static boolean DELETE_ROWS_NO_WHERE_RETURNS_ZERO = true;
+	private final static boolean DELETE_ROWS_NO_WHERE_RETURNS_ZERO = false;
 	// can't be final
 	public static boolean AUTO_COMMIT_SUPPORTED = false;
 
@@ -777,9 +775,9 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 	public void testFieldConfig() throws Exception {
 		List<DatabaseFieldConfig> fieldConfigs = new ArrayList<DatabaseFieldConfig>();
 		fieldConfigs.add(new DatabaseFieldConfig("id", "id2", DataType.UNKNOWN, null, 0, false, false, true, null,
-				false, null, false, null, false, null, false, null, null, false, 0, 0));
+				false, null, false, null, false, null, false, null, null, false, -1, 0));
 		fieldConfigs.add(new DatabaseFieldConfig("stuff", "stuffy", DataType.UNKNOWN, null, 0, false, false, false,
-				null, false, null, false, null, false, null, false, null, null, false, 0, 0));
+				null, false, null, false, null, false, null, false, null, null, false, -1, 0));
 		DatabaseTableConfig<NoAnno> tableConfig = new DatabaseTableConfig<NoAnno>(NoAnno.class, "noanno", fieldConfigs);
 		Dao<NoAnno, Integer> noAnnotaionDao = createDao(tableConfig, true);
 		NoAnno noa = new NoAnno();
@@ -982,7 +980,6 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		UUID uuidVal = UUID.randomUUID();
 		BigInteger bigIntegerVal = new BigInteger("13213123214432423423423423423423423423423423423423423");
 		BigDecimal bigDecimalVal = new BigDecimal("1321312.1231231233214432423423423423423423423423423423423423423");
-		Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 		// some databases have miniscule default precision
 		BigDecimal bigDecimalNumericVal;
 		String databaseTypeClassName = databaseType.getClass().getSimpleName();
@@ -1016,7 +1013,6 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		allTypes.bigInteger = bigIntegerVal;
 		allTypes.bigDecimal = bigDecimalVal;
 		allTypes.bigDecimalNumeric = bigDecimalNumericVal;
-		allTypes.timestamp = timestamp;
 		SerialData obj = new SerialData();
 		String key = "key";
 		String value = "value";
@@ -1051,7 +1047,6 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		checkQueryResult(allDao, qb, allTypes, AllTypes.BIG_INTEGER_FIELD_NAME, bigIntegerVal, true);
 		checkQueryResult(allDao, qb, allTypes, AllTypes.BIG_DECIMAL_FIELD_NAME, bigDecimalVal, true);
 		checkQueryResult(allDao, qb, allTypes, AllTypes.BIG_DECIMAL_NUMERIC_FIELD_NAME, bigDecimalNumericVal, true);
-		checkQueryResult(allDao, qb, allTypes, AllTypes.TIME_STAMP_FIELD_NAME, timestamp, true);
 	}
 
 	/**
@@ -1188,16 +1183,24 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		ReservedField res = new ReservedField();
 		res.from = from;
 		assertEquals(1, reservedDao.create(res));
+
 		int id = res.select;
 		ReservedField res2 = reservedDao.queryForId(id);
 		assertNotNull(res2);
 		assertEquals(id, res2.select);
+
 		String group = "group-string";
 		for (ReservedField reserved : reservedDao) {
 			assertEquals(from, reserved.from);
 			reserved.group = group;
 			reservedDao.update(reserved);
 		}
+
+		List<ReservedField> results =
+				reservedDao.queryBuilder().where().eq(ReservedField.GROUP_FIELD, "group-string").query();
+		assertEquals(1, results.size());
+		assertEquals(res.select, results.get(0).select);
+
 		CloseableIterator<ReservedField> iterator = reservedDao.iterator();
 		try {
 			while (iterator.hasNext()) {
@@ -1362,7 +1365,6 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		assertTrue(allDao.objectsEqual(all, allList.get(0)));
 	}
 
-	@SuppressLint("SimpleDateFormat")
 	public void testDefaultValueHandling() throws Exception {
 		Dao<AllTypesDefault, Object> allDao = createDao(AllTypesDefault.class, true);
 		AllTypesDefault all = new AllTypesDefault();
@@ -1371,10 +1373,10 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		List<AllTypesDefault> allList = allDao.queryForAll();
 		assertEquals(1, allList.size());
 		all.stringField = DEFAULT_STRING_VALUE;
-		DateFormat defaultDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSSS");
+		DateFormat defaultDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSSS", Locale.US);
 		all.dateField = defaultDateFormat.parse(DEFAULT_DATE_VALUE);
 		all.dateLongField = new Date(Long.parseLong(DEFAULT_DATE_LONG_VALUE));
-		DateFormat defaultDateStringFormat = new SimpleDateFormat(DEFAULT_DATE_STRING_FORMAT);
+		DateFormat defaultDateStringFormat = new SimpleDateFormat(DEFAULT_DATE_STRING_FORMAT, Locale.US);
 		all.dateStringField = defaultDateStringFormat.parse(DEFAULT_DATE_STRING_VALUE);
 		all.booleanField = Boolean.parseBoolean(DEFAULT_BOOLEAN_VALUE);
 		all.booleanObj = Boolean.parseBoolean(DEFAULT_BOOLEAN_VALUE);
@@ -1391,7 +1393,6 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		all.doubleField = Double.parseDouble(DEFAULT_DOUBLE_VALUE);
 		all.doubleObj = Double.parseDouble(DEFAULT_DOUBLE_VALUE);
 		all.ourEnum = OurEnum.valueOf(DEFAULT_ENUM_VALUE);
-		all.timestamp = new Timestamp(defaultDateStringFormat.parse(DEFAULT_DATE_STRING_VALUE).getTime());
 		assertFalse(allDao.objectsEqual(all, allList.get(0)));
 	}
 
@@ -3317,6 +3318,56 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		}
 	}
 
+	public void testAutoCommit() throws Exception {
+		if (!AUTO_COMMIT_SUPPORTED) {
+			return;
+		}
+		final Dao<Foo, Integer> dao = createDao(Foo.class, true);
+		DatabaseConnection conn1 = null;
+		try {
+			conn1 = dao.startThreadConnection();
+			assertTrue(dao.isAutoCommit(conn1));
+			dao.setAutoCommit(conn1, false);
+			assertFalse(dao.isAutoCommit(conn1));
+
+			final Foo foo = new Foo();
+			assertEquals(1, dao.create(foo));
+			assertNotNull(dao.queryForId(foo.id));
+
+			new Thread(new Runnable() {
+				public void run() {
+					try {
+						DatabaseConnection conn2 = dao.startThreadConnection();
+						try {
+							assertNotNull(dao.queryForId(foo.id));
+						} finally {
+							if (conn2 != null) {
+								dao.endThreadConnection(conn2);
+							}
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}).start();
+
+		} finally {
+			if (conn1 != null) {
+				dao.setAutoCommit(conn1, true);
+				dao.endThreadConnection(conn1);
+			}
+		}
+	}
+
+	public void testFewFields() throws Exception {
+		Dao<FewFields, Object> dao = createDao(FewFields.class, true);
+		FewFields few = new FewFields();
+		assertEquals(1, dao.create(few));
+
+		FewFields result = dao.queryForId(few.id);
+		assertNotNull(result);
+	}
+
 	/* ==================================================================================== */
 
 	private <T extends TestableType<ID>, ID> void checkTypeAsId(Class<T> clazz, ID id1, ID id2) throws Exception {
@@ -3621,7 +3672,6 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		public static final String BIG_INTEGER_FIELD_NAME = "bigInteger";
 		public static final String BIG_DECIMAL_FIELD_NAME = "bigDecimal";
 		public static final String BIG_DECIMAL_NUMERIC_FIELD_NAME = "bigDecimalNumeric";
-		public static final String TIME_STAMP_FIELD_NAME = "timestamp";
 		@DatabaseField(generatedId = true)
 		int id;
 		@DatabaseField(columnName = STRING_FIELD_NAME)
@@ -3665,8 +3715,6 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		BigDecimal bigDecimal;
 		@DatabaseField(columnName = BIG_DECIMAL_NUMERIC_FIELD_NAME, dataType = DataType.BIG_DECIMAL_NUMERIC)
 		BigDecimal bigDecimalNumeric;
-		@DatabaseField(columnName = TIME_STAMP_FIELD_NAME)
-		Timestamp timestamp;
 		AllTypes() {
 		}
 	}
@@ -3680,7 +3728,8 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		Date dateField;
 		@DatabaseField(dataType = DataType.DATE_LONG, defaultValue = DEFAULT_DATE_LONG_VALUE)
 		Date dateLongField;
-		@DatabaseField(defaultValue = DEFAULT_DATE_STRING_VALUE, format = DEFAULT_DATE_STRING_FORMAT)
+		@DatabaseField(dataType = DataType.DATE_STRING, defaultValue = DEFAULT_DATE_STRING_VALUE,
+				format = DEFAULT_DATE_STRING_FORMAT)
 		Date dateStringField;
 		@DatabaseField(defaultValue = DEFAULT_BOOLEAN_VALUE)
 		boolean booleanField;
@@ -3716,8 +3765,6 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		OurEnum ourEnum;
 		@DatabaseField(defaultValue = DEFAULT_ENUM_NUMBER_VALUE, dataType = DataType.ENUM_INTEGER)
 		OurEnum ourEnumNumber;
-		@DatabaseField(defaultValue = DEFAULT_DATE_STRING_VALUE, format = DEFAULT_DATE_STRING_FORMAT)
-		Timestamp timestamp;
 		AllTypesDefault() {
 		}
 	}
@@ -3794,6 +3841,7 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 
 	// for testing reserved words as field names
 	protected static class ReservedField {
+		public static final String GROUP_FIELD = "group";
 		@DatabaseField(id = true)
 		public int select;
 		@DatabaseField
@@ -3802,7 +3850,7 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		public String table;
 		@DatabaseField
 		public String where;
-		@DatabaseField
+		@DatabaseField(columnName = GROUP_FIELD)
 		public String group;
 		@DatabaseField
 		public String order;
@@ -4751,6 +4799,13 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		@DatabaseField(version = true)
 		int version;
 		public VersionField() {
+		}
+	}
+
+	protected static class FewFields {
+		@DatabaseField(generatedId = true)
+		int id;
+		public FewFields() {
 		}
 	}
 }

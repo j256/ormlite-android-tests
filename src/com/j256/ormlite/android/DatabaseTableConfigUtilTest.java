@@ -2,6 +2,7 @@ package com.j256.ormlite.android;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
@@ -40,13 +41,13 @@ public class DatabaseTableConfigUtilTest extends BaseDaoTest {
 			if (fieldConfig.getColumnName().equals(Foo.ID_FIELD_NAME)) {
 				assertTrue(fieldConfig.isId());
 				assertTrue(fieldConfig.isCanBeNull());
-				assertEquals(DatabaseField.NO_MAX_FOREIGN_AUTO_REFRESH_LEVEL_SPECIFIED,
+				assertEquals(DatabaseField.DEFAULT_MAX_FOREIGN_AUTO_REFRESH_LEVEL,
 						fieldConfig.getMaxForeignAutoRefreshLevel());
 				foundId = true;
 			} else if (fieldConfig.getColumnName().equals(Foo.NAME_FIELD_NAME)) {
 				assertFalse(fieldConfig.isId());
 				assertFalse(fieldConfig.isCanBeNull());
-				assertEquals(DatabaseField.NO_MAX_FOREIGN_AUTO_REFRESH_LEVEL_SPECIFIED,
+				assertEquals(DatabaseField.DEFAULT_MAX_FOREIGN_AUTO_REFRESH_LEVEL,
 						fieldConfig.getMaxForeignAutoRefreshLevel());
 				foundName = true;
 			} else if (fieldConfig.getColumnName().equals(Foo.SOME_OBJECT_FIELD_NAME)) {
@@ -90,8 +91,7 @@ public class DatabaseTableConfigUtilTest extends BaseDaoTest {
 		assertNull(fieldConfig.getIndexName("xxx"));
 		assertNull(fieldConfig.getUniqueIndexName("xxx"));
 		assertFalse(fieldConfig.isForeignAutoRefresh());
-		assertEquals(DatabaseField.NO_MAX_FOREIGN_AUTO_REFRESH_LEVEL_SPECIFIED,
-				fieldConfig.getMaxForeignAutoRefreshLevel());
+		assertEquals(DatabaseField.DEFAULT_MAX_FOREIGN_AUTO_REFRESH_LEVEL, fieldConfig.getMaxForeignAutoRefreshLevel());
 		assertEquals(VoidType.class, fieldConfig.getPersisterClass());
 		assertFalse(fieldConfig.isAllowGeneratedIdInsert());
 		assertNull(fieldConfig.getColumnDefinition());
@@ -242,7 +242,7 @@ public class DatabaseTableConfigUtilTest extends BaseDaoTest {
 	private <T> DatabaseFieldConfig getFirstField(Class<T> clazz) throws Exception {
 		int before = DatabaseTableConfigUtil.getWorkedC();
 		DatabaseTableConfig<T> tableConfig = DatabaseTableConfigUtil.fromClass(connectionSource, clazz);
-		assertEquals(clazz.getSimpleName().toLowerCase(), tableConfig.getTableName());
+		assertEquals(clazz.getSimpleName().toLowerCase(Locale.US), tableConfig.getTableName());
 		assertEquals(clazz, tableConfig.getDataClass());
 		List<DatabaseFieldConfig> fields = tableConfig.getFieldConfigs();
 		assertEquals(1, fields.size());
@@ -416,7 +416,8 @@ public class DatabaseTableConfigUtilTest extends BaseDaoTest {
 		int id;
 		@DatabaseField(columnName = NAME_FIELD_NAME, canBeNull = false)
 		String name;
-		@DatabaseField(columnName = SOME_OBJECT_FIELD_NAME, maxForeignAutoRefreshLevel = MAX_FOREIGN_AUTO_REFRESH_LEVEL, foreign = true)
+		@DatabaseField(columnName = SOME_OBJECT_FIELD_NAME,
+				maxForeignAutoRefreshLevel = MAX_FOREIGN_AUTO_REFRESH_LEVEL, foreign = true)
 		Object someObject;
 	}
 }

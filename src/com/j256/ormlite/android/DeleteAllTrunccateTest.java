@@ -15,8 +15,7 @@ public class DeleteAllTrunccateTest extends BaseDaoTest {
 		}
 
 		DeleteBuilder<Foo, Integer> stmtBuilder = fooDao.deleteBuilder();
-		// no where so DELETE `foo` returns 0
-		assertEquals(0, fooDao.delete(stmtBuilder.prepare()));
+		assertEquals(fooN, fooDao.delete(stmtBuilder.prepare()));
 		assertEquals(0, fooDao.queryForAll().size());
 	}
 
