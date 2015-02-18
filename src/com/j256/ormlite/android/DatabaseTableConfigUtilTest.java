@@ -41,19 +41,28 @@ public class DatabaseTableConfigUtilTest extends BaseDaoTest {
 			if (fieldConfig.getColumnName().equals(Foo.ID_FIELD_NAME)) {
 				assertTrue(fieldConfig.isId());
 				assertTrue(fieldConfig.isCanBeNull());
+				boolean resetForeignAutoRefresh = fieldConfig.isForeignAutoRefresh();
+				fieldConfig.setForeignAutoRefresh(true);
 				assertEquals(DatabaseField.DEFAULT_MAX_FOREIGN_AUTO_REFRESH_LEVEL,
 						fieldConfig.getMaxForeignAutoRefreshLevel());
+				fieldConfig.setForeignAutoRefresh(resetForeignAutoRefresh);
 				foundId = true;
 			} else if (fieldConfig.getColumnName().equals(Foo.NAME_FIELD_NAME)) {
 				assertFalse(fieldConfig.isId());
 				assertFalse(fieldConfig.isCanBeNull());
+				boolean resetForeignAutoRefresh = fieldConfig.isForeignAutoRefresh();
+				fieldConfig.setForeignAutoRefresh(true);
 				assertEquals(DatabaseField.DEFAULT_MAX_FOREIGN_AUTO_REFRESH_LEVEL,
 						fieldConfig.getMaxForeignAutoRefreshLevel());
+				fieldConfig.setForeignAutoRefresh(resetForeignAutoRefresh);
 				foundName = true;
 			} else if (fieldConfig.getColumnName().equals(Foo.SOME_OBJECT_FIELD_NAME)) {
 				assertFalse(fieldConfig.isId());
 				assertTrue(fieldConfig.isCanBeNull());
+				boolean resetForeignAutoRefresh = fieldConfig.isForeignAutoRefresh();
+				fieldConfig.setForeignAutoRefresh(true);
 				assertEquals(Foo.MAX_FOREIGN_AUTO_REFRESH_LEVEL, fieldConfig.getMaxForeignAutoRefreshLevel());
+				fieldConfig.setForeignAutoRefresh(resetForeignAutoRefresh);
 				foundSomeObject = true;
 			}
 		}
@@ -91,7 +100,9 @@ public class DatabaseTableConfigUtilTest extends BaseDaoTest {
 		assertNull(fieldConfig.getIndexName("xxx"));
 		assertNull(fieldConfig.getUniqueIndexName("xxx"));
 		assertFalse(fieldConfig.isForeignAutoRefresh());
+		fieldConfig.setForeignAutoRefresh(true);
 		assertEquals(DatabaseField.DEFAULT_MAX_FOREIGN_AUTO_REFRESH_LEVEL, fieldConfig.getMaxForeignAutoRefreshLevel());
+		fieldConfig.setForeignAutoRefresh(false);
 		assertEquals(VoidType.class, fieldConfig.getPersisterClass());
 		assertFalse(fieldConfig.isAllowGeneratedIdInsert());
 		assertNull(fieldConfig.getColumnDefinition());
@@ -367,7 +378,7 @@ public class DatabaseTableConfigUtilTest extends BaseDaoTest {
 	}
 
 	protected static class MaxForeignAutoRefreshLevelClass {
-		@DatabaseField(maxForeignAutoRefreshLevel = MAX_FOREIGN_AUTO_REFRESH_LEVEL)
+		@DatabaseField(maxForeignAutoRefreshLevel = MAX_FOREIGN_AUTO_REFRESH_LEVEL, foreignAutoRefresh = true)
 		String foo;
 	}
 

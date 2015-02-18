@@ -11,8 +11,9 @@ import android.util.Log;
 
 /**
  * Unit tests which demonstrates the problems with the Android SQLiteCursor when dealing with escaped field-names with
- * DISTINCT queries (select DISTINCT `stuff` from footable). For some reason, this combination results in the
- * cursor.getColumnName(#) call returning the field name `stuff` which _includes_ the escape characters.
+ * DISTINCT queries (select DISTINCT `stuff` from footable). For some reason, in older Android OS releases, this
+ * combination results in the cursor.getColumnName(#) call returning the field name `stuff` which _includes_ the escape
+ * characters.
  * 
  * @author graywatson
  */
