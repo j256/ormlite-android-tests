@@ -1136,7 +1136,7 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		StringWidth stringWidth = new StringWidth();
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < ALL_TYPES_STRING_WIDTH + 1; i++) {
-			sb.append("c");
+			sb.append('c');
 		}
 		String string = sb.toString();
 		assertTrue(string.length() > ALL_TYPES_STRING_WIDTH);
@@ -1154,7 +1154,7 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		StringWidth stringWidth = new StringWidth();
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < ALL_TYPES_STRING_WIDTH; i++) {
-			sb.append("c");
+			sb.append('c');
 		}
 		String string = sb.toString();
 		assertTrue(string.length() == ALL_TYPES_STRING_WIDTH);
@@ -2389,7 +2389,7 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		LongVarChar lvc = new LongVarChar();
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < 10240; i++) {
-			sb.append(".");
+			sb.append('.');
 		}
 		String stuff = sb.toString();
 		lvc.stuff = stuff;
