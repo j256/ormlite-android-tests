@@ -7,3 +7,5 @@ bin/
 /lint.xml
 /libs
 /res
+.idea
+*.iml
