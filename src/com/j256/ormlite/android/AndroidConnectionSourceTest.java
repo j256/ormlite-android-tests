@@ -10,7 +10,7 @@ public class AndroidConnectionSourceTest extends AndroidTestCase {
 
 	public void testSimpleDataSource() throws Exception {
 		AndroidConnectionSource sds = new AndroidConnectionSource(getHelper());
-		DatabaseConnection conn = sds.getReadOnlyConnection();
+		DatabaseConnection conn = sds.getReadOnlyConnection(null);
 		assertNotNull(conn);
 		sds.releaseConnection(conn);
 		sds.close();
@@ -18,18 +18,18 @@ public class AndroidConnectionSourceTest extends AndroidTestCase {
 
 	public void testConnectionAlreadyClosed() throws Exception {
 		AndroidConnectionSource sds = new AndroidConnectionSource(getHelper());
-		DatabaseConnection conn = sds.getReadOnlyConnection();
+		DatabaseConnection conn = sds.getReadOnlyConnection(null);
 		assertNotNull(conn);
 		sds.releaseConnection(conn);
 		sds.close();
 		// this actually works because we don't enforce the close
-		sds.getReadOnlyConnection();
+		sds.getReadOnlyConnection(null);
 	}
 
 	public void testSaveAndClear() throws Exception {
 		AndroidConnectionSource sds = new AndroidConnectionSource(getHelper());
-		DatabaseConnection conn1 = sds.getReadOnlyConnection();
-		DatabaseConnection conn2 = sds.getReadOnlyConnection();
+		DatabaseConnection conn1 = sds.getReadOnlyConnection(null);
+		DatabaseConnection conn2 = sds.getReadOnlyConnection(null);
 		assertSame(conn1, conn2);
 		sds.saveSpecialConnection(conn1);
 		sds.clearSpecialConnection(conn1);
@@ -39,10 +39,10 @@ public class AndroidConnectionSourceTest extends AndroidTestCase {
 
 	public void testIsOpen() throws Exception {
 		AndroidConnectionSource sds = new AndroidConnectionSource(getHelper());
-		sds.releaseConnection(sds.getReadOnlyConnection());
-		assertTrue(sds.isOpen());
+		sds.releaseConnection(sds.getReadOnlyConnection(null));
+		assertTrue(sds.isOpen(null));
 		sds.close();
-		assertFalse(sds.isOpen());
+		assertFalse(sds.isOpen(null));
 	}
 
 	@SuppressWarnings("deprecation")

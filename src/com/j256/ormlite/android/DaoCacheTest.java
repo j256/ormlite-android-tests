@@ -96,21 +96,21 @@ public class DaoCacheTest extends AndroidTestCase {
 		assertNotSame(account1, account3);
 		assertNotSame(account2, account3);
 
-		Order order3 = account3.getOrders().get(0);
+		Order order3 = orderDao.queryForId(orderName);
 		assertNotNull(order3);
 		assertNotSame(order, order3);
 		assertNotSame(order1, order3);
 		assertNotSame(order2, order3);
 
-		Order order4 = orderDao.queryForId(orderName);
+		Order order4 = account3.getOrders().get(0);
 		assertNotNull(order4);
 		assertNotSame(order, order4);
 		assertNotSame(order1, order4);
 		assertNotSame(order2, order4);
-		assertSame(order3, order4);
+		assertSame(order4, order3);
 
 		Order order5 = orderDao.queryForId(orderName);
-		assertSame(order4, order5);
+		assertSame(order3, order5);
 
 		stop();
 	}

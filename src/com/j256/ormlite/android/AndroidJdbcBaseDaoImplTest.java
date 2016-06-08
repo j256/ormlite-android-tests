@@ -3903,7 +3903,11 @@ public class AndroidJdbcBaseDaoImplTest extends BaseDaoTest {
 		}
 		@Override
 		public int hashCode() {
-			return map.hashCode();
+			if (map == null) {
+				return 0;
+			} else {
+				return map.hashCode();
+			}
 		}
 		@Override
 		public boolean equals(Object obj) {
